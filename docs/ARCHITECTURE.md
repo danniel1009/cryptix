@@ -12,7 +12,7 @@ Never use copy such as "Trade now", "Buy instantly", "Sell instantly", "Automati
 "Transaction successful", "100% secure", "Bank-grade", "Guaranteed", "Licensed".
 
 The process the whole site communicates: **CHECK RATE → REQUEST EXCHANGE → CONTACT OUR TEAM → MANUAL EXCHANGE**.
-Main CTA wording: **Request Exchange** (never Trade/Buy/Sell/Execute).
+Main CTA wording: **Request Exchange** (never Trade/Buy/Sell/Execute). Exception, per the client brief: the hero's primary CTA is **Check live rate** (scrolls to the converter) with **Chat on WhatsApp** secondary.
 
 ## Directory layout
 

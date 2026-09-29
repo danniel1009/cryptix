@@ -52,7 +52,7 @@ function deriveIndicator(
 /** Entrance is a CSS keyframe animation (globals.css `.hero-in`): it runs before
  *  hydration and without JS, so the h1 is never gated on the client bundle. */
 function heroIn(index: number): { className: string; style: { animationDelay: string } } {
-  return { className: "hero-in", style: { animationDelay: `${0.05 + index * 0.1}s` } };
+  return { className: "hero-in", style: { animationDelay: `${(0.05 + index * 0.1).toFixed(2)}s` } };
 }
 
 const H1_CLASSES =

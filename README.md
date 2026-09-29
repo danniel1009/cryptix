@@ -55,9 +55,12 @@ All configuration is centralised: **`src/config/site.ts`** (brand, public contac
 | `CONTACT_EMAIL` | server | Where leads are emailed (when an email channel is configured). |
 | `LEAD_WEBHOOK_URL` / `LEAD_WEBHOOK_SECRET` | server | Optional JSON webhook for leads (HMAC-SHA256 signature header). |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | server | Optional transactional email via Resend. |
-| `FORM_RATE_LIMIT_MAX` / `FORM_RATE_LIMIT_WINDOW_MS` / `FORM_MIN_FILL_TIME_MS` | server | Form abuse protection. |
+| `FORM_RATE_LIMIT_MAX` / `FORM_RATE_LIMIT_WINDOW_MS` / `FORM_MIN_FILL_TIME_MS` | server | Form abuse protection (a too-fast submission is delivered but flagged as suspicious; the honeypot is dropped silently). |
+| `TRUSTED_PROXY_HOPS` | server | How many reverse proxies / platform edges sit in front of the app (default 1). Only the right-most entries of `X-Forwarded-For` are trusted for the rate-limit key. |
+| `IP_HASH_SECRET` | server | Key for the pseudonymous IP hash in lead logs (random per process when unset). |
+| `NEXT_DIST_DIR` | build | Optional build output directory (e.g. `.next-build`) so a production build never clobbers a running dev server. |
 
-If no lead channel is configured, submissions are logged to the server console (redacted in production) so the site works out of the box in development.
+If no lead channel is configured, submissions are logged to the server console in **development** so the site works out of the box. In **production** a missing channel is a hard error: the API answers `delivery_failed` rather than telling a visitor a request was received that nobody will read.
 
 ## Architecture
 
@@ -95,3 +98,13 @@ See `docs/ARCHITECTURE.md` and `docs/DESIGN.md` for the full contracts and the v
 * Any Node.js host that supports Next.js 16 (Vercel, a VPS with `npm run build && npm run start`, Docker).
 * Set `NEXT_PUBLIC_SITE_URL` to the public URL and `NEXT_PUBLIC_WHATSAPP_NUMBER` to the real number before building (public vars are inlined at build time).
 * The in-memory rate limiter and market cache are per instance; for multi-instance deployments plug a shared store into `src/lib/security/rate-limit.ts` (documented seam).
+
+## Decisions & known limitations
+
+* **Spread direction.** The customer always pays market + spread on the asset they *receive* (`ourRate = marketRate / (1 + spread)`), in every direction. For USDT → BTC that displays as "1 BTC = 105,000 USDT" when market is 100,000; for BTC → USDT it displays as "1 BTC = 95,238 USDT". Change `EXCHANGE_SPREAD` to tune the size, and `src/lib/market/rates.ts` if the business ever wants a different convention.
+* **Pairs.** Eight pairs are selectable (the four featured customer-facing pairs plus their reverse directions, which the converter's swap button needs). Marketing sections show the featured four; `FEATURED_PAIRS` / `featured: true` in `src/config/exchange.ts` control that.
+* **Hero CTAs.** The hero keeps "Check live rate" (scrolls to the converter) + "Chat on WhatsApp" as specified by the client; "Request exchange" is the main CTA everywhere else (navbar, converter, FAQ, modal).
+* **Locale & SEO.** The language is a cookie preference on a single URL; search engines index the default locale only. If Indonesian discoverability matters, add a crawlable `/id` variant and `hreflang` alternates.
+* **Market data is single-sourced per pair** (first provider that answers wins, with fallback and age-based staleness); there is no cross-provider price comparison. The Security section copy says exactly that.
+* **Realtime transport** is Server-Sent Events (works on any Node host and the App Router) with polling fallback; a WebSocket transport can replace `useMarketFeed` without touching consumers. Serverless hosts keep a function alive per open stream.
+* **Rate limiting and the market cache** are in-memory per instance; multi-instance deployments should plug a shared store into `src/lib/security/rate-limit.ts`.
