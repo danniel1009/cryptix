@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import type { MouseEvent } from "react";
 import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
@@ -10,6 +10,7 @@ import { LiveIndicator, type LiveIndicatorState } from "@/components/ui/LiveIndi
 import { REVEAL_EASE } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { cn } from "@/lib/utils";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
@@ -48,16 +49,10 @@ function deriveIndicator(
   return { state: "live", label: t.market.live };
 }
 
-const STAGGER: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
-};
-
-function fadeUp(reduced: boolean): Variants {
-  return {
-    hidden: { opacity: 0, y: reduced ? 0 : 24 },
-    visible: { opacity: 1, y: 0, transition: { duration: reduced ? 0.25 : 0.7, ease: REVEAL_EASE } },
-  };
+/** Entrance is a CSS keyframe animation (globals.css `.hero-in`): it runs before
+ *  hydration and without JS, so the h1 is never gated on the client bundle. */
+function heroIn(index: number): { className: string; style: { animationDelay: string } } {
+  return { className: "hero-in", style: { animationDelay: `${0.05 + index * 0.1}s` } };
 }
 
 const H1_CLASSES =
@@ -78,7 +73,6 @@ export function Hero() {
   const indicator = deriveIndicator(status, connection, snapshot !== null, t);
   const whatsappConfigured = isWhatsAppConfigured();
   const whatsappHref = whatsappConfigured ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale)) : "#contact";
-  const item = fadeUp(reduced);
 
   const scrollToSection = (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, id: string) => {
     event.preventDefault();
@@ -95,14 +89,9 @@ export function Hero() {
       <HeroBackground />
 
       <Container className="relative z-10 flex flex-1 flex-col items-center justify-center text-center">
-        <motion.div
-          variants={STAGGER}
-          initial="hidden"
-          animate="visible"
-          className="flex w-full max-w-5xl flex-col items-center"
-        >
+        <div className="flex w-full max-w-5xl flex-col items-center">
           {/* Eyebrow pill with market status */}
-          <motion.div variants={item} className="mb-7 sm:mb-9">
+          <div className="hero-in mb-7 sm:mb-9" style={heroIn(0).style}>
             <span className="glass inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:pl-3 sm:pr-3.5">
               <LiveIndicator state={indicator.state} label={indicator.label} />
               <span aria-hidden="true" className="hidden h-3 w-px bg-line-strong sm:block" />
@@ -110,22 +99,23 @@ export function Hero() {
                 {t.hero.eyebrow}
               </span>
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h1 id={HEADING_ID} variants={item} className={H1_CLASSES}>
+          <h1 id={HEADING_ID} className={cn(H1_CLASSES, "hero-in")} style={heroIn(1).style}>
             {t.hero.titleLine1}
             <br />
             <span className="[text-shadow:0_0_48px_rgba(34,229,138,0.22)]">{t.hero.titleLine2}</span>
-          </motion.h1>
+          </h1>
 
-          <motion.p variants={item} className="mt-6 max-w-2xl text-base text-muted sm:mt-7 sm:text-lg">
+          <p className="hero-in mt-6 max-w-2xl text-base text-muted sm:mt-7 sm:text-lg" style={heroIn(2).style}>
             {t.hero.subtitle}
-          </motion.p>
+          </p>
 
           {/* Supporting points */}
-          <motion.ul
-            variants={item}
-            className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 font-mono text-xs uppercase tracking-[0.2em] text-faint sm:mt-6"
+          <ul
+            role="list"
+            className="hero-in mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 font-mono text-xs uppercase tracking-[0.2em] text-faint sm:mt-6"
+            style={heroIn(3).style}
           >
             {t.hero.supporting.map((point, index) => (
               <li key={point} className="flex items-center gap-3">
@@ -137,12 +127,12 @@ export function Hero() {
                 <span>{point}</span>
               </li>
             ))}
-          </motion.ul>
+          </ul>
 
           {/* CTAs */}
-          <motion.div
-            variants={item}
-            className="mt-9 flex w-full flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:items-center sm:justify-center"
+          <div
+            className="hero-in mt-9 flex w-full flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:items-center sm:justify-center"
+            style={heroIn(4).style}
           >
             <Button
               size="lg"
@@ -177,12 +167,12 @@ export function Hero() {
                 {t.hero.ctaSecondary}
               </Button>
             )}
-          </motion.div>
+          </div>
 
-          <motion.p variants={item} className="mt-6 max-w-xl text-xs leading-relaxed text-faint sm:text-[13px]">
+          <p className="hero-in mt-6 max-w-xl text-xs leading-relaxed text-faint sm:text-[13px]" style={heroIn(5).style}>
             {t.hero.trustNote}
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
 
         {/* Process strip */}
         <motion.div

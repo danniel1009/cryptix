@@ -311,3 +311,19 @@
     0 0 0 2px var(--bg),
     0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent);
 }
+
+/* Hero entrance — CSS so it runs before hydration and without JS (content stays indexable/visible). */
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-in {
+  animation: hero-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes hero-in {
+    from { opacity: 0; transform: none; }
+    to { opacity: 1; transform: none; }
+  }
+  .hero-in { animation-duration: 0.25s; }
+}
