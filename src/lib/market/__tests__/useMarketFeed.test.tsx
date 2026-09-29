@@ -218,6 +218,23 @@ describe("useMarketFeed", () => {
     expect(FakeEventSource.live).toHaveLength(1);
   });
 
+  it("reopens the stream at once on a server-initiated recycle (event: reconnect) without counting a failure", async () => {
+    const { result } = renderHook(() => useMarketFeed());
+    await flush();
+    await act(async () => FakeEventSource.live[0].open());
+    expect(result.current.connection).toBe("live");
+    const first = FakeEventSource.live[0];
+    await act(async () => first.emit("reconnect", {}));
+    expect(FakeEventSource.live).toHaveLength(1);
+    expect(FakeEventSource.live[0]).not.toBe(first);
+    await act(async () => FakeEventSource.live[0].open());
+    expect(result.current.connection).toBe("live");
+    // Polling never started: the recycle is not an error.
+    fetchMock.mockClear();
+    await flush(CLIENT_POLL_INTERVAL_MS * 2);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("refresh() fetches on demand", async () => {
     const { result } = renderHook(() => useMarketFeed());
     await flush();

@@ -7,6 +7,12 @@
 export const MARKET_REFRESH_INTERVAL_MS = 10_000;
 /** How often the SSE stream pushes a snapshot to connected clients. */
 export const MARKET_STREAM_PUSH_INTERVAL_MS = 5_000;
+/**
+ * A stream closes itself (with an `event: reconnect`) after this long so serverless
+ * hosts with a per-request duration limit (e.g. Vercel functions) never cut it mid-flight;
+ * the client reopens immediately without counting a failure.
+ */
+export const MARKET_STREAM_MAX_LIFETIME_MS = 50_000;
 /** SSE keep-alive comment interval. */
 export const MARKET_STREAM_HEARTBEAT_MS = 15_000;
 /** A snapshot whose last successful update is older than this is STALE. */

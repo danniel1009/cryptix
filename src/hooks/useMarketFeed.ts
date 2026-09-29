@@ -216,6 +216,13 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
         setConnection("live");
       };
 
+      // Server-initiated recycle (duration-limited hosts): reopen at once, not a failure.
+      source.addEventListener("reconnect", () => {
+        if (!rt.active || rt.source !== source) return;
+        closeStream();
+        openStream();
+      });
+
       source.addEventListener("snapshot", (event: MessageEvent<string>) => {
         if (!rt.active || rt.source !== source) return;
         try {

@@ -1,4 +1,4 @@
-import { MARKET_STREAM_HEARTBEAT_MS, MARKET_STREAM_PUSH_INTERVAL_MS } from "@/config/market";
+import { MARKET_STREAM_HEARTBEAT_MS, MARKET_STREAM_PUSH_INTERVAL_MS, MARKET_STREAM_MAX_LIFETIME_MS } from "@/config/market";
 import { getCachedSnapshot, getMarketSnapshot } from "@/lib/market/service";
 import type { MarketSnapshot } from "@/lib/market/types";
 
@@ -16,6 +16,8 @@ import type { MarketSnapshot } from "@/lib/market/types";
  */
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+/** Serverless function budget (seconds); the stream recycles itself well before this. */
+export const maxDuration = 60;
 
 const RETRY_HINT_MS = 3_000;
 
@@ -30,6 +32,8 @@ export async function GET(request: Request): Promise<Response> {
 
   let lastSent: MarketSnapshot | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+
+  let lifetimeTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
   let cleanup: () => void = () => {};
 
@@ -49,6 +53,7 @@ export async function GET(request: Request): Promise<Response> {
         closed = true;
         if (pushTimer) clearInterval(pushTimer);
         if (heartbeatTimer) clearInterval(heartbeatTimer);
+        if (lifetimeTimer) clearTimeout(lifetimeTimer);
         request.signal.removeEventListener("abort", cleanup);
         try {
           controller.close();
@@ -92,6 +97,12 @@ export async function GET(request: Request): Promise<Response> {
       heartbeatTimer = setInterval(() => {
         send(`: keep-alive ${Date.now()}\n\n`);
       }, MARKET_STREAM_HEARTBEAT_MS);
+
+      // Graceful recycle for duration-limited hosts: tell the client to reopen, then close.
+      lifetimeTimer = setTimeout(() => {
+        send("event: reconnect\ndata: {}\n\n");
+        cleanup();
+      }, MARKET_STREAM_MAX_LIFETIME_MS);
     },
     cancel() {
       cleanup();
