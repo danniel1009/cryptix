@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import type { CurrencyCode } from "@/config/exchange";
-import { dictionaries, type Dictionary } from "@/lib/i18n/dictionaries";
+import { siteConfig } from "@/config/site";
+import { dictionaries, interpolate, type Dictionary } from "@/lib/i18n/dictionaries";
 import {
   formatAmount,
   formatDateTime,
@@ -72,8 +73,14 @@ export function I18nProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
+  // Keep the document language and the SEO title/description in sync with a
+  // client-side switch (the server renders them for the cookie locale only).
   useEffect(() => {
     document.documentElement.lang = locale;
+    const { seo } = dictionaries[locale];
+    document.title = interpolate(seo.title, { brand: siteConfig.name });
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (meta) meta.content = interpolate(seo.description, { brand: siteConfig.name });
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { SkipLink } from "@/components/layout/SkipLink";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
 import { siteConfig } from "@/config/site";
 import { interpolate } from "@/lib/i18n/dictionaries";
@@ -135,12 +136,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <I18nProvider initialLocale={locale}>
           <MarketProvider>
             <ExchangeRequestProvider>
-              <a
-                href="#main"
-                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-bg focus:outline-none"
-              >
-                {t.common.skipToContent}
-              </a>
+              <SkipLink />
               <Navbar />
               <main id="main" className="flex-1">
                 {children}
