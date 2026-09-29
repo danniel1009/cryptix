@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import { LOGO_BOLT_PATH, LOGO_FRAME_PATH, LOGO_VIEWBOX } from "@/components/ui/Logo";
-import { DEFAULT_EXCHANGE_SPREAD } from "@/config/exchange";
+import { serverConfig } from "@/config/server";
 import { siteConfig } from "@/config/site";
+import { en } from "@/lib/i18n/dictionaries/en";
 import { formatSpread } from "@/lib/i18n/format";
 
 /**
@@ -10,7 +11,7 @@ import { formatSpread } from "@/lib/i18n/format";
  * hierarchy comes from size, tracking and colour rather than font weight.
  */
 export const runtime = "nodejs";
-export const alt = `${siteConfig.name} — Professional Digital Asset Exchange`;
+export const alt = `${siteConfig.name} — ${en.footer.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -21,7 +22,7 @@ const MUTED = "#9AA3B2";
 const LINE = "rgba(255,255,255,0.10)";
 
 export default function OpenGraphImage() {
-  const spread = formatSpread("en", DEFAULT_EXCHANGE_SPREAD);
+  const spread = formatSpread("en", serverConfig.exchange.spread);
 
   return new ImageResponse(
     (
@@ -81,10 +82,10 @@ export default function OpenGraphImage() {
               maxWidth: 1000,
             }}
           >
-            Professional Digital Asset Exchange
+            {en.footer.tagline}
           </div>
           <div style={{ display: "flex", fontSize: 28, color: MUTED, letterSpacing: "-0.01em" }}>
-            Live market prices · Indicative rates · Personal support
+            {en.hero.supporting.join(" · ")}
           </div>
         </div>
 

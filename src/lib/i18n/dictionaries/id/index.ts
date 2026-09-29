@@ -17,6 +17,7 @@ import { contact } from "./contact";
 import { exchangeRequest } from "./exchangeRequest";
 import { whatsapp } from "./whatsapp";
 import { seo } from "./seo";
+import { system } from "./system";
 
 /**
  * Bahasa Indonesia dictionary. Typed against the English `Dictionary` so a
@@ -42,4 +43,5 @@ export const id: Dictionary = {
   exchangeRequest,
   whatsapp,
   seo,
+  system,
 };

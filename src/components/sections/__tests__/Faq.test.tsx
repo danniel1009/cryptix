@@ -195,7 +195,8 @@ describe("Faq section", () => {
     const first = screen.getByRole("button", { name: enQuestion(0) });
     expect(first).toHaveAttribute("aria-expanded", "true");
     expect(within(screen.getByRole("region", { name: enQuestion(0) })).getByText(enAnswer(0))).toBeInTheDocument();
-    expect(screen.queryByText(enAnswer(1))).not.toBeInTheDocument();
+    // Closed answers stay in the DOM (indexable), hidden from assistive tech.
+    expect(screen.getByText(enAnswer(1)).closest('[role="region"]')).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("button", { name: enQuestion(1) })).toHaveAttribute("aria-expanded", "false");
   });
 

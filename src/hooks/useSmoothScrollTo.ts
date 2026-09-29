@@ -40,6 +40,13 @@ export function scrollToId(id: string, options: ScrollToOptions = {}): boolean {
 
   window.scrollTo({ top: Math.max(0, top), behavior });
 
+  // Move focus with the scroll so keyboard / screen-reader users land in the section.
+  const focusTarget = target ?? document.getElementById("main");
+  if (focusTarget) {
+    if (!focusTarget.hasAttribute("tabindex")) focusTarget.setAttribute("tabindex", "-1");
+    focusTarget.focus({ preventScroll: true });
+  }
+
   if (updateHash) {
     try {
       const url = isTop ? window.location.pathname + window.location.search : `#${clean}`;

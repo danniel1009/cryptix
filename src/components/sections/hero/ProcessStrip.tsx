@@ -16,7 +16,7 @@ export interface ProcessStripProps {
  */
 export function ProcessStrip({ steps, className }: ProcessStripProps) {
   return (
-    <ol className={cn("flex flex-wrap items-center justify-center gap-x-2 gap-y-2 sm:gap-x-0", className)}>
+    <ol role="list" className={cn("flex flex-wrap items-center justify-center gap-x-2 gap-y-2 sm:gap-x-0", className)}>
       {steps.map((step, index) => (
         <li key={step} className="flex items-center">
           {index > 0 ? (

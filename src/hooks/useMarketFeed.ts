@@ -54,6 +54,8 @@ export interface MarketFeed {
   isStale: boolean;
   /** Fetch /api/market right now (manual refresh). */
   refresh: () => void;
+  /** Ticking clock (STATUS_TICK_MS) for relative times and per-rate age. */
+  now: number;
 }
 
 export interface UseMarketFeedOptions {
@@ -350,5 +352,7 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
     lastUpdatedAt,
     isStale: status === "stale",
     refresh,
+    /** Ticking clock (STATUS_TICK_MS) so consumers can render relative times / per-rate age. */
+    now,
   };
 }

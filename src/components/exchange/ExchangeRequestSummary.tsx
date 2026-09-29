@@ -67,7 +67,7 @@ export function ExchangeRequestSummary({ form, labelId }: ExchangeRequestSummary
   let rateBlock: ReactNode;
   if (summaryRate) {
     rateBlock = (
-      <div className={cn("flex flex-col gap-1.5 transition-opacity duration-300", dimmed && "opacity-70")}>
+      <div className={cn("flex flex-col gap-1.5 transition-opacity duration-300", dimmed && "opacity-80")}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-xs text-muted">{copy.rate}</span>
           <span className="nums font-mono text-sm font-medium text-fg">

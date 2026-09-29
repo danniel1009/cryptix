@@ -16,6 +16,7 @@ import { contact } from "./contact";
 import { exchangeRequest } from "./exchangeRequest";
 import { whatsapp } from "./whatsapp";
 import { seo } from "./seo";
+import { system } from "./system";
 
 /**
  * English dictionary — the SOURCE OF TRUTH for the Dictionary type.
@@ -41,4 +42,5 @@ export const en = {
   exchangeRequest,
   whatsapp,
   seo,
+  system,
 };

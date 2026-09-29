@@ -223,6 +223,8 @@ export interface RateCheckerState {
   estimatedReceive: number | null;
   spread: number;
   status: MarketStatus;
+  /** Ticking clock from the market feed (for relative times). */
+  now: number | undefined;
   connection: MarketConnection;
   lastUpdatedAt: Date | null;
   snapshot: MarketSnapshot | null;
@@ -301,7 +303,9 @@ export function useRateChecker(): RateCheckerState {
   // Derived from the market context on every render — never cached here.
   const rate = market.getRate(pair.id);
   const loading = market.snapshot === null && market.connection === "connecting";
-  const rateAvailable = market.status !== "unavailable" && rate !== undefined;
+  // Per-rate status: a retained quote from a dead provider must not look live because other pairs are.
+  const status: MarketStatus = rate && market.getRateStatus ? market.getRateStatus(pair.id) : market.status;
+  const rateAvailable = status !== "unavailable" && rate !== undefined;
   const amountValid = isValidAmount(amount);
   const estimatedReceive = rateAvailable && amountValid && rate ? calculateReceive(rate, amount) : null;
   const spread = market.snapshot?.spread ?? DEFAULT_EXCHANGE_SPREAD;
@@ -370,11 +374,12 @@ export function useRateChecker(): RateCheckerState {
     rateAvailable,
     estimatedReceive,
     spread,
-    status: market.status,
+    status,
     connection: market.connection,
     lastUpdatedAt: market.lastUpdatedAt,
+    now: market.now,
     snapshot: market.snapshot,
-    indicator: indicatorState(market.status, market.connection),
+    indicator: indicatorState(status, market.connection),
     connectionNote: connectionNoteFor(market.connection),
     refresh: market.refresh,
     prefill,

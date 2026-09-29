@@ -15,7 +15,7 @@ import { useMarket } from "@/providers/MarketProvider";
  */
 export function PairsMarketNote({ className }: { className?: string }) {
   const { t, formatRelativeTime } = useI18n();
-  const { snapshot, status, connection, lastUpdatedAt } = useMarket();
+  const { snapshot, status, connection, lastUpdatedAt, now } = useMarket();
 
   if (!snapshot && connection === "connecting") return null;
 
@@ -27,7 +27,7 @@ export function PairsMarketNote({ className }: { className?: string }) {
   } else if (status === "stale") {
     state = "stale";
     label = lastUpdatedAt
-      ? interpolate(t.common.updatedAgo, { time: formatRelativeTime(lastUpdatedAt) })
+      ? interpolate(t.common.updatedAgo, { time: formatRelativeTime(lastUpdatedAt, now) })
       : t.market.stale;
   } else if (connection === "offline") {
     state = "reconnecting";

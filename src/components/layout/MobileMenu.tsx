@@ -79,7 +79,7 @@ export function MobileMenu({ id, open, onClose }: MobileMenuProps) {
           </div>
 
           <nav aria-label={t.nav.menu} className="relative flex-1 overflow-y-auto px-5 py-6 scrollbar-thin sm:px-8">
-            <ul className="flex flex-col">
+            <ul role="list" className="flex flex-col">
               {siteConfig.nav.map((item, index) => (
                 <li key={item.id}>
                   <a

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useEffect, useRef, useState } from "react";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
@@ -22,10 +22,14 @@ const BIG_NUMBER = "nums font-mono font-medium leading-tight tracking-tight";
  */
 export function bigNumberSize(text: string): string {
   const len = text.replace(/\s/g, "").length;
-  if (len <= 7) return "text-4xl sm:text-5xl";
-  if (len <= 10) return "text-3xl sm:text-5xl";
-  if (len <= 13) return "text-2xl sm:text-4xl";
-  return "text-xl sm:text-3xl";
+  // Calibrated for the ~125px number column next to the coin chip on a 375px phone
+  // (mono digits ≈ 0.58em): the value must never clip or wrap.
+  if (len <= 5) return "text-4xl sm:text-5xl";
+  if (len <= 7) return "text-3xl sm:text-5xl";
+  if (len <= 9) return "text-2xl sm:text-5xl";
+  if (len <= 11) return "text-xl sm:text-4xl";
+  if (len <= 13) return "text-lg sm:text-3xl";
+  return "text-base sm:text-2xl";
 }
 
 /**
@@ -61,6 +65,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
 
   const estimate = rc.estimatedReceive;
   const estimateText = estimate !== null ? formatAmount(estimate, rc.to) : null;
+  const estimateDisplay = estimate !== null ? formatAmount(estimate, rc.to, { withSymbol: false }) : "";
   const toHelper = rc.loading
     ? t.common.loading
     : !rc.rateAvailable
@@ -72,6 +77,15 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
     : !rc.rateAvailable
       ? t.rateChecker.estimateUnavailable
       : t.rateChecker.enterAmount;
+  // Announce the estimate only when the VISITOR changed something (amount / currencies), never on price ticks.
+  const [announcement, setAnnouncement] = useState("");
+  const userInputKey = `${rc.amount}|${rc.from}|${rc.to}`;
+  const lastAnnouncedKey = useRef(userInputKey);
+  useEffect(() => {
+    if (lastAnnouncedKey.current === userInputKey) return;
+    lastAnnouncedKey.current = userInputKey;
+    setAnnouncement(estimateText ?? emptyStatusText);
+  }, [userInputKey, estimateText, emptyStatusText]);
   const stale = rc.status === "stale";
 
   return (
@@ -134,12 +148,12 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
             <span id={toLabelId} className="block text-sm text-muted">
               {t.rateChecker.to}
             </span>
+            {/* Visible value is NOT a live region: prices tick every few seconds and would be read out
+                endlessly. A separate polite region below announces only the visitor's own changes. */}
             <div
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
+              data-testid="to-value"
               aria-labelledby={toLabelId}
-              className={cn(BIG_NUMBER, bigNumberSize(estimateText ?? ""), "mt-2 break-all text-fg transition-opacity duration-300", stale && "opacity-70")}
+              className={cn(BIG_NUMBER, bigNumberSize(estimateDisplay), "mt-2 whitespace-nowrap text-fg transition-opacity duration-300", stale && "opacity-80")}
             >
               {estimate !== null && estimateText ? (
                 <>
@@ -158,6 +172,9 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
               )}
             </div>
             <p className="mt-2 truncate text-xs text-faint">{toHelper}</p>
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+              {announcement}
+            </div>
           </div>
           <CurrencySelect
             id={`${uid}-to`}

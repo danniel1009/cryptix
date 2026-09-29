@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import type { CurrencyCode, PairId } from "@/config/exchange";
+import { computeStatus } from "@/lib/market/rates";
 import { useMarketFeed, type MarketConnection } from "@/hooks/useMarketFeed";
 import { resolveMarketPrice } from "@/lib/market/rates";
 import {
@@ -30,12 +31,24 @@ export interface MarketContextValue {
   lastUpdatedAt: Date | null;
   isStale: boolean;
   refresh: () => void;
+  /** Ticking clock (ms) — re-renders consumers so "x minutes ago" and per-rate age stay current. */
+  now?: number;
   getRate: (pairId: PairId) => IndicativeRate | undefined;
+  /**
+   * Status of ONE rate: the snapshot status, worsened by the age of that rate's own
+   * quote (a retained pair from a dead provider goes stale/unavailable on its own).
+   */
+  getRateStatus?: (pairId: PairId) => MarketStatus;
   /**
    * Direct provider quote for base/quote; falls back to a derived quote
    * (inverse or bridged, `source` = contributing providers joined by "+").
    */
   getQuote: (base: CurrencyCode, quote: CurrencyCode) => MarketQuote | undefined;
+}
+
+const STATUS_RANK: Record<MarketStatus, number> = { live: 0, stale: 1, unavailable: 2 };
+function worstStatus(a: MarketStatus, b: MarketStatus): MarketStatus {
+  return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
 }
 
 const MarketContext = createContext<MarketContextValue | null>(null);
@@ -61,6 +74,15 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   }, [snapshot]);
 
   const getRate = useCallback((pairId: PairId) => rateMap.get(pairId), [rateMap]);
+  const getRateStatus = useCallback(
+    (pairId: PairId): MarketStatus => {
+      const rate = rateMap.get(pairId);
+      if (!rate) return "unavailable";
+      const own = computeStatus(rate.updatedAt, feed.now);
+      return worstStatus(feed.status, own);
+    },
+    [rateMap, feed.status, feed.now],
+  );
 
   const getQuote = useCallback(
     (base: CurrencyCode, quote: CurrencyCode): MarketQuote | undefined => {
@@ -94,10 +116,12 @@ export function MarketProvider({ children }: { children: ReactNode }) {
       lastUpdatedAt: feed.lastUpdatedAt,
       isStale: feed.isStale,
       refresh: feed.refresh,
+      now: feed.now,
       getRate,
+      getRateStatus,
       getQuote,
     }),
-    [snapshot, feed.connection, feed.status, feed.lastUpdatedAt, feed.isStale, feed.refresh, getRate, getQuote],
+    [snapshot, feed.connection, feed.status, feed.lastUpdatedAt, feed.isStale, feed.refresh, feed.now, getRate, getRateStatus, getQuote],
   );
 
   return <MarketContext.Provider value={value}>{children}</MarketContext.Provider>;

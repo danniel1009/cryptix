@@ -61,7 +61,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
       <div
         className={cn(
           "flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-center transition-opacity duration-300",
-          stale && "opacity-70",
+          stale && "opacity-80",
         )}
       >
         {showNumbers ? (
@@ -73,10 +73,8 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
               className="text-sm text-fg sm:text-base"
             />
             {rate.change24hPct !== null ? (
-              <span
-                className={cn("nums font-mono text-xs", rate.change24hPct >= 0 ? "text-accent" : "text-danger")}
-                aria-label={`${t.market.columns.change24h} ${formatPercent(rate.change24hPct)}`}
-              >
+              <span className={cn("nums font-mono text-xs", rate.change24hPct >= 0 ? "text-accent" : "text-danger")}>
+                <span className="sr-only">{t.market.columns.change24h} </span>
                 {formatPercent(rate.change24hPct)}
               </span>
             ) : null}
@@ -100,7 +98,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
           <dl
             className={cn(
               "divide-y divide-line/60 rounded-xl border border-line/60 text-sm transition-opacity duration-300",
-              stale && "opacity-70",
+              stale && "opacity-80",
             )}
           >
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
@@ -116,7 +114,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
                   <button
                     type="button"
                     aria-label={t.rateChecker.spreadInfoLabel}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-faint transition-colors duration-150 hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    className="-m-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-faint sm:m-0 sm:h-7 sm:w-7 transition-colors duration-150 hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                   >
                     <Info aria-hidden="true" className="h-3.5 w-3.5" />
                   </button>
@@ -142,7 +140,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
           ) : null}
           {stale && rc.lastUpdatedAt ? (
             <p className="text-center text-xs text-warning">
-              {interpolate(t.rateChecker.staleNote, { time: formatRelativeTime(rc.rate?.updatedAt ?? rc.lastUpdatedAt) })}
+              {interpolate(t.rateChecker.staleNote, { time: formatRelativeTime(rc.rate?.updatedAt ?? rc.lastUpdatedAt, rc.now) })}
             </p>
           ) : null}
         </>

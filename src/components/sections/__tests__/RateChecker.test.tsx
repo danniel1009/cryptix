@@ -133,7 +133,8 @@ const toSelect = () => screen.getByRole("button", { name: new RegExp(`^${en.rate
 const swapButton = () => screen.getByRole("button", { name: en.rateChecker.swap });
 const requestButton = () => screen.getByRole("button", { name: en.rateChecker.requestExchange });
 /** The read-only "To" amount: a live region named by the "To" label. */
-const toValue = () => screen.getByRole("status", { name: en.rateChecker.to });
+// The visible To value is intentionally NOT a live region (price ticks would be read out endlessly).
+const toValue = () => screen.getByTestId("to-value");
 const marketRow = () => screen.getByText(en.rateChecker.marketRate).closest("div") as HTMLElement;
 const ourRow = () => screen.getByText(en.rateChecker.ourRate).closest("div") as HTMLElement;
 const readPrefill = () => JSON.parse(screen.getByTestId("probe").textContent ?? "null") as ExchangeRequestPrefill | null;
@@ -234,7 +235,9 @@ describe("RateChecker — default view", () => {
     expect(toSelect()).toHaveTextContent("BTC");
     expect(within(toValue()).getByText("0.00952381")).toBeInTheDocument();
     expect(toValue()).toHaveTextContent("0.00952381 BTC");
-    expect(toValue()).toHaveAttribute("aria-live", "polite");
+    // Announcements go through a separate polite region that only speaks on the visitor's own changes.
+    expect(toValue()).not.toHaveAttribute("aria-live");
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
     // Helper lines carry the full currency names.
     expect(screen.getByText(CURRENCIES.USDT.name)).toBeInTheDocument();
     expect(screen.getByText(CURRENCIES.BTC.name)).toBeInTheDocument();
@@ -285,7 +288,7 @@ describe("RateChecker — default view", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(idDict.rateChecker.title);
     expect(screen.getByText("+5% DARI HARGA PASAR")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tukar mata uang" })).toBeInTheDocument();
-    expect(screen.getByRole("status", { name: "Ke" })).toHaveTextContent(formatAmount("id", calculateReceive(rateFor("USDT_BTC"), 1000), "BTC"));
+    expect(screen.getByTestId("to-value")).toHaveTextContent(formatAmount("id", calculateReceive(rateFor("USDT_BTC"), 1000), "BTC"));
     // The card's disclaimer is the shared short disclaimer (kept identical by construction).
     expect(screen.getByText(idDict.rateChecker.disclaimer)).toBeInTheDocument();
     expect(idDict.rateChecker.disclaimer).toBe(idDict.disclaimer.short);

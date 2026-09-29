@@ -99,7 +99,7 @@ export function MarketCards({ rows, view, skeletonRows = 4, className }: MarketC
     return (
       <div className={className} aria-busy="true">
         <p className="sr-only">{t.common.loading}</p>
-        <ul className={cn(grid, "m-0 p-0")}>
+        <ul role="list" className={cn(grid, "m-0 p-0")}>
           {Array.from({ length: skeletonRows }, (_, i) => (
             <MarketCardSkeleton key={i} />
           ))}

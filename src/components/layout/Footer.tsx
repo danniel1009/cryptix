@@ -15,7 +15,7 @@ import { useMarket } from "@/providers/MarketProvider";
 
 const COLUMN_TITLE = "font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-faint";
 const LINK =
-  "inline-flex items-center gap-2.5 text-sm text-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:text-accent";
+  "inline-flex min-h-11 items-center gap-2.5 text-sm text-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:text-accent sm:min-h-0";
 
 /**
  * Site footer: brand + tagline · navigation · contact · language, then the
@@ -53,7 +53,7 @@ export function Footer() {
           {/* Navigation */}
           <nav aria-label={t.footer.navigationTitle} className="lg:col-span-2">
             <h3 className={COLUMN_TITLE}>{t.footer.navigationTitle}</h3>
-            <ul className="mt-5 space-y-3">
+            <ul role="list" className="mt-5 space-y-3">
               {siteConfig.nav.map((item) => (
                 <li key={item.id}>
                   <a
@@ -74,7 +74,7 @@ export function Footer() {
           {/* Contact */}
           <div className="lg:col-span-3">
             <h3 className={COLUMN_TITLE}>{t.footer.contactTitle}</h3>
-            <ul className="mt-5 space-y-3">
+            <ul role="list" className="mt-5 space-y-3">
               {whatsappHref ? (
                 <li>
                   <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={LINK}>

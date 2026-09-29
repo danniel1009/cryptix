@@ -63,10 +63,7 @@ export function PairCard({ pair, rate, status, onCheckRate }: PairCardProps) {
       </div>
 
       {/* Indicative rate */}
-      <div
-        aria-live="polite"
-        className="mt-5 rounded-xl border border-line bg-surface-2/60 px-4 py-3.5"
-      >
+      <div className="mt-5 rounded-xl border border-line bg-surface-2/60 px-4 py-3.5">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-faint">
             {showRate ? t.pairs.ourRate : t.pairs.indicativeLabel}

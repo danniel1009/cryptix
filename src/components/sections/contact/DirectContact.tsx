@@ -37,7 +37,7 @@ export function DirectContact() {
       <h3 className="text-xl font-medium tracking-tight text-fg">{t.contact.directTitle}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{t.contact.directBody}</p>
 
-      <ul className="mt-7 divide-y divide-line border-y border-line">
+      <ul role="list" className="mt-7 divide-y divide-line border-y border-line">
         <li className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             <IconWell>
@@ -74,7 +74,7 @@ export function DirectContact() {
               <p className="text-sm font-medium text-fg">{t.contact.emailLabel}</p>
               <a
                 href={`mailto:${email}`}
-                className="mt-0.5 block truncate font-mono text-sm text-muted transition-colors duration-200 hover:text-fg focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="mt-0.5 inline-flex min-h-11 max-w-full items-center truncate font-mono text-sm text-muted sm:min-h-0 transition-colors duration-200 hover:text-fg focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {email}
               </a>
