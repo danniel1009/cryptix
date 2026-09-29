@@ -70,10 +70,13 @@ export function withCurrency(formatted: string, currency: CurrencyCode): string 
 /** "+2.41%" / "-0.42%" / "0.00%" */
 export function formatPercent(locale: Locale, value: number, decimals = 2): string {
   if (!Number.isFinite(value)) return "—";
-  const sign = value > 0 ? "+" : "";
+  // Sign from the ROUNDED value so a change that rounds to zero is "0.00%", never "-0.00%".
+  const shown = Number(value.toFixed(decimals));
+  const rounded = Object.is(shown, -0) || shown === 0 ? 0 : shown;
+  const sign = rounded > 0 ? "+" : "";
   return (
     sign +
-    formatNumber(locale, value, {
+    formatNumber(locale, rounded, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }) +
@@ -149,7 +152,8 @@ export function parseAmountInput(raw: string, locale?: Locale): number {
   } else if (commas + dots === 1) {
     const sep: "," | "." = commas === 1 ? "," : ".";
     const idx = s.indexOf(sep);
-    const groupLike = s.length - idx - 1 === 3 && idx > 0;
+    // Grouping only when the integer part is 1–3 digits and not "0" ("100,000" yes; "0.001" no).
+    const groupLike = s.length - idx - 1 === 3 && /^[1-9]\d{0,2}$/.test(s.slice(0, idx));
     const localeDecimal: "," | "." | null = locale ? (locale === "id" ? "," : ".") : null;
     if (localeDecimal) decimalSep = sep === localeDecimal ? sep : groupLike ? null : sep;
     else decimalSep = groupLike ? null : sep;

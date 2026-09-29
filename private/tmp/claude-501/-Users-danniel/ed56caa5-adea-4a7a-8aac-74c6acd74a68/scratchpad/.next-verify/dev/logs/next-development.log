@@ -1,0 +1,8 @@
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":"  We detected TypeScript in your project and reconfigured your tsconfig.json file for you."}
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":"  The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:\n"}
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":"  \t- include was updated to add '/private/tmp/claude-501/-Users-danniel/ed56caa5-adea-4a7a-8aac-74c6acd74a68/scratchpad/.next-verify/types/**/*.ts'"}
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":"  \t- include was updated to add '/private/tmp/claude-501/-Users-danniel/ed56caa5-adea-4a7a-8aac-74c6acd74a68/scratchpad/.next-verify/dev/types/**/*.ts'"}
+{"timestamp":"00:00:00.441","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:00.497","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:00.498","source":"Server","level":"LOG","message":"✓ Generated CLAUDE.md for AI agents. Set `agentRules: false` in next.config to disable."}

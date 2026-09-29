@@ -153,11 +153,11 @@ describe("POST /api/contact", () => {
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("spam_detected reason=honeypot"));
   });
 
-  it("too-fast submission: pretends success but never delivers", async () => {
+  it("too-fast submission is a weak signal: delivered, but flagged as suspicious", async () => {
     const res = await contactRoute.POST(post("/api/contact", { ...validContact(), ts: Date.now() }));
     expect(res.status).toBe(200);
-    expect(deliverLeadMock).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("reason=too_fast"));
+    expect(deliverLeadMock).toHaveBeenCalledTimes(1);
+    expect(deliverLeadMock.mock.calls[0][0]).toMatchObject({ suspicious: true });
   });
 
   it("rate limits the 4th request from one IP with 429 + Retry-After", async () => {

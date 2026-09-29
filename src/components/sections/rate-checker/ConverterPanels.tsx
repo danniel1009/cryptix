@@ -80,7 +80,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
       <div
         className={cn(
           PANEL,
-          "focus-within:border-accent/40 focus-within:shadow-[0_0_0_3px_rgba(34,229,138,0.08)]",
+          "focus-within:border-accent focus-within:shadow-[0_0_0_3px_rgba(34,229,138,0.22)]",
           invalid && "border-danger/50 focus-within:border-danger/60 focus-within:shadow-[0_0_0_3px_rgba(240,82,95,0.10)]",
         )}
       >
@@ -144,7 +144,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
               {estimate !== null && estimateText ? (
                 <>
                   <span aria-hidden="true">
-                    <AnimatedNumber value={estimate} format={(n) => formatAmount(n, rc.to, { withSymbol: false })} />
+                    <AnimatedNumber key={rc.to} value={estimate} format={(n) => formatAmount(n, rc.to, { withSymbol: false })} />
                   </span>
                   <span className="sr-only">{estimateText}</span>
                 </>

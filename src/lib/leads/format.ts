@@ -67,6 +67,7 @@ function exchangeRows(lead: ExchangeRequestLead): Row[] {
 function metaRows(lead: Lead): Row[] {
   return [
     { label: "Reference", value: lead.reference },
+    ...(lead.suspicious ? [{ label: "Flag", value: "submitted unusually fast (possible autofill or bot) — verify before acting" }] : []),
     { label: "Received", value: lead.receivedAt },
     { label: "Language", value: lead.locale },
     { label: "IP hash", value: lead.ipHash },

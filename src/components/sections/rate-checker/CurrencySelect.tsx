@@ -179,7 +179,7 @@ export function CurrencySelect({ id, label, value, options, onChange, align = "r
             exit={{ opacity: 0, y: reduced ? 0 : -4, scale: reduced ? 1 : 0.98 }}
             transition={{ duration: reduced ? 0 : 0.16, ease: REVEAL_EASE }}
             className={cn(
-              "absolute top-full z-30 mt-2 w-72 max-w-[calc(100vw-2.5rem)] origin-top rounded-2xl border border-line bg-surface-2 p-1.5 shadow-float outline-none",
+              "absolute top-full z-30 mt-2 w-72 max-w-[calc(100vw-6rem)] origin-top rounded-2xl border border-line bg-surface-2 p-1.5 shadow-float outline-none",
               align === "right" ? "right-0" : "left-0",
             )}
           >

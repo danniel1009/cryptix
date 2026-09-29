@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
 /**
  * Client IP resolution for rate limiting and abuse correlation.
@@ -30,12 +30,24 @@ function normaliseCandidate(raw: string | null | undefined): string | null {
   return IP_CHARSET.test(value) ? value : null;
 }
 
+/** TRUSTED_PROXY_HOPS (default 1 = one reverse proxy / platform edge in front of the app). */
+function trustedProxyHops(): number {
+  const n = Number(process.env.TRUSTED_PROXY_HOPS ?? 1);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    // "client, proxy1, proxy2" → the left-most entry is the original client.
-    const first = normaliseCandidate(forwarded.split(",")[0]);
-    if (first) return first;
+    // Each proxy APPENDS the address that connected to it, so only the right-most
+    // TRUSTED_PROXY_HOPS entries are trustworthy; the entry just before them is the
+    // client as seen by the first trusted proxy. Left-most would be spoofable.
+    const parts = forwarded.split(",").map((p) => normaliseCandidate(p)).filter((p): p is string => Boolean(p));
+    if (parts.length > 0) {
+      const hops = trustedProxyHops();
+      const candidate = parts[Math.max(0, parts.length - hops)];
+      if (candidate) return candidate;
+    }
   }
   const realIp = normaliseCandidate(request.headers.get("x-real-ip"));
   if (realIp) return realIp;
@@ -51,6 +63,12 @@ export function getClientIp(request: Request): string {
  * enough to brute-force, so treat the hash as personal data in retention
  * policies all the same.
  */
+const IP_HASH_KEY: string = process.env.IP_HASH_SECRET?.trim() || randomBytes(32).toString("hex");
+
+/**
+ * Keyed (HMAC) pseudonym of the client IP. With IP_HASH_SECRET unset the key is
+ * random per process, so hashes are only comparable within one deployment.
+ */
 export function hashClientIp(ip: string): string {
-  return createHash("sha256").update(ip).digest("hex").slice(0, 16);
+  return createHmac("sha256", IP_HASH_KEY).update(ip).digest("hex").slice(0, 16);
 }

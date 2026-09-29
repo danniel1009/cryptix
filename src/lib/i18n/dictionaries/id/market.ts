@@ -2,8 +2,8 @@ import type { market as en } from "@/lib/i18n/dictionaries/en/market";
 
 /** `t.market` (Bahasa Indonesia) — mirror of `en/market.ts`. */
 export const market: typeof en = {
-  eyebrow: "Market",
-  title: "Market live",
+  eyebrow: "Pasar",
+  title: "Pasar live",
   description:
     "Harga pasar terbaru dari penyedia data kami. Hanya sebagai referensi — kurs exchange kami ditampilkan di bagian cek kurs.",
   live: "LIVE",

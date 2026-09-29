@@ -21,7 +21,7 @@ export type ApiErrorCode =
   | "payload_too_large"
   | "method_not_allowed";
 
-export type BadRequestReason = "invalid_json" | "invalid_body";
+export type BadRequestReason = "invalid_json" | "invalid_body" | "unsupported_media_type" | "cross_site";
 
 export type ApiSuccessBody<T extends object = { reference: string }> = { ok: true } & T;
 
@@ -89,19 +89,54 @@ export type JsonBodyResult =
  *  - 400 `invalid_json` when the text is not JSON
  *  - 400 `invalid_body` when the JSON is not a plain object
  */
+class BodyTooLargeError extends Error {}
+
+/** Read the body as text, aborting as soon as more than `maxBytes` have arrived. */
+async function readTextCapped(request: Request, maxBytes: number): Promise<string> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new BodyTooLargeError();
+    }
+    chunks.push(value);
+  }
+  const merged = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
+}
+
 export async function readJsonBody(request: Request, maxBytes = MAX_BODY_BYTES): Promise<JsonBodyResult> {
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     return { ok: false, response: payloadTooLarge() };
   }
+  // Only JSON bodies are accepted: this also forces a CORS preflight for any
+  // cross-site caller, which fails because no CORS headers are ever sent.
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!/^application\/json\b/i.test(contentType.trim())) {
+    return { ok: false, response: badRequest("unsupported_media_type") };
+  }
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") {
+    return { ok: false, response: badRequest("cross_site") };
+  }
   let text: string;
   try {
-    text = await request.text();
-  } catch {
+    text = await readTextCapped(request, maxBytes);
+  } catch (error) {
+    if (error instanceof BodyTooLargeError) return { ok: false, response: payloadTooLarge() };
     return { ok: false, response: badRequest("invalid_body") };
-  }
-  if (new TextEncoder().encode(text).byteLength > maxBytes) {
-    return { ok: false, response: payloadTooLarge() };
   }
   let parsed: unknown;
   try {

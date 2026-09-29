@@ -91,11 +91,12 @@ beforeEach(() => {
 });
 
 describe("pure helpers", () => {
-  it("defaultAmountFor: 1,000 USDT, 1 unit of anything else", () => {
+  it("defaultAmountFor: a sensible starting amount per sent currency", () => {
     expect(defaultAmountFor("USDT")).toBe(1000);
-    expect(defaultAmountFor("ETH")).toBe(1);
-    expect(defaultAmountFor("SOL")).toBe(1);
-    expect(defaultAmountFor("BTC")).toBe(1);
+    expect(defaultAmountFor("ETH")).toBe(0.5);
+    expect(defaultAmountFor("SOL")).toBe(10);
+    expect(defaultAmountFor("BTC")).toBe(0.01);
+    expect(defaultAmountFor("IDR")).toBe(1_000_000);
   });
 
   it("resolveReceivable keeps a valid preference and otherwise picks the first supported target", () => {
@@ -244,11 +245,11 @@ describe("useRateChecker", () => {
     expect(result.current.from).toBe("SOL");
     expect(result.current.to).toBe("BTC");
     expect(result.current.pair.id).toBe("SOL_BTC");
-    expect(result.current.amount).toBe(1);
-    expect(result.current.amountText).toBe("1.0000");
+    expect(result.current.amount).toBe(10);
+    expect(result.current.amountText).toBe("10.0000");
     expect(result.current.quickAmounts).toEqual([1, 5, 10, 50]);
     expect(result.current.receivable).toEqual(["BTC"]);
-    expect(result.current.estimatedReceive).toBeCloseTo(calculateReceive(rateFor("SOL_BTC"), 1), 15);
+    expect(result.current.estimatedReceive).toBeCloseTo(calculateReceive(rateFor("SOL_BTC"), 10), 15);
     // BTC is sendable (reverse pairs): BTC → BTC is impossible, so the first receivable (USDT) is chosen.
     act(() => result.current.setFrom("BTC"));
     expect(result.current.from).toBe("BTC");
@@ -388,7 +389,7 @@ describe("useRateChecker", () => {
       window.dispatchEvent(new CustomEvent(SELECT_PAIR_EVENT, { detail: { pairId: "BTC_USDT" } }));
     });
     expect(result.current.pair.id).toBe("BTC_USDT");
-    expect(result.current.amount).toBe(1);
+    expect(result.current.amount).toBe(0.01);
     act(() => {
       window.dispatchEvent(new CustomEvent(SELECT_PAIR_EVENT, { detail: { pairId: "ETH_SOL" } }));
     });

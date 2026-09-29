@@ -66,7 +66,10 @@ export async function POST(request: Request): Promise<Response> {
     text: collectTextFields(body, TEXT_FIELDS),
     minFillTimeMs: serverConfig.security.formMinFillTimeMs,
   });
-  if (spam.spam) {
+  // "too_fast" alone is a weak signal (browser autofill): deliver the lead but flag
+  // it for the team. Every other signal is dropped silently.
+  const suspicious = spam.spam && spam.reason === "too_fast";
+  if (spam.spam && !suspicious) {
     // Respond exactly like a success so bots learn nothing; nothing is delivered.
     console.warn(`${LOG_PREFIX} spam_detected reason=${spam.reason} ref=${reference} ip=${ipHash}`);
     return ok({ reference });
@@ -88,6 +91,7 @@ export async function POST(request: Request): Promise<Response> {
     whatsapp: data.whatsapp,
     subject: data.subject,
     message: data.message,
+    suspicious: suspicious || undefined,
   };
 
   const delivery = await deliverLead(lead);

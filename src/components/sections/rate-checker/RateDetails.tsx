@@ -34,7 +34,7 @@ function RateEquation({
     <span className={cn("nums whitespace-nowrap font-mono", className)}>
       <span>1 {base} = </span>
       <span aria-hidden="true">
-        <AnimatedNumber value={value} format={(n) => formatPrice(n, currency)} />
+        <AnimatedNumber key={currency} value={value} format={(n) => formatPrice(n, currency)} />
       </span>
       <span className="sr-only">{formatPrice(value, currency)}</span>
     </span>
@@ -85,7 +85,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
         <LiveIndicator state={rc.indicator} label={rc.loading ? t.common.loading : undefined} />
         {rc.lastUpdatedAt ? (
           <span className="nums text-xs text-faint">
-            {interpolate(t.rateChecker.updatedAt, { time: formatTime(rc.lastUpdatedAt) })}
+            {interpolate(t.rateChecker.updatedAt, { time: formatTime(rc.rate?.updatedAt ?? rc.lastUpdatedAt) })}
           </span>
         ) : null}
       </div>
@@ -99,7 +99,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
         <>
           <dl
             className={cn(
-              "divide-y divide-line/60 overflow-hidden rounded-xl border border-line/60 text-sm transition-opacity duration-300",
+              "divide-y divide-line/60 rounded-xl border border-line/60 text-sm transition-opacity duration-300",
               stale && "opacity-70",
             )}
           >
@@ -142,7 +142,7 @@ export function RateDetails({ rc }: { rc: RateCheckerState }) {
           ) : null}
           {stale && rc.lastUpdatedAt ? (
             <p className="text-center text-xs text-warning">
-              {interpolate(t.rateChecker.staleNote, { time: formatRelativeTime(rc.lastUpdatedAt) })}
+              {interpolate(t.rateChecker.staleNote, { time: formatRelativeTime(rc.rate?.updatedAt ?? rc.lastUpdatedAt) })}
             </p>
           ) : null}
         </>

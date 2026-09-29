@@ -53,8 +53,10 @@ export const QUICK_AMOUNTS: Partial<Record<CurrencyCode, readonly number[]>> = {
 };
 
 /** The panel is never empty on first paint: 1,000 USDT, or 1 unit of any other coin. */
+const DEFAULT_AMOUNTS: Record<CurrencyCode, number> = { USDT: 1_000, BTC: 0.01, ETH: 0.5, SOL: 10, IDR: 1_000_000 };
+
 export function defaultAmountFor(from: CurrencyCode): number {
-  return from === "USDT" ? 1_000 : 1;
+  return DEFAULT_AMOUNTS[from] ?? 1;
 }
 
 /** The currency to receive for `from`: keep `preferred` when valid, else the first supported one. */

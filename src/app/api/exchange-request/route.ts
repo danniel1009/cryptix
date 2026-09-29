@@ -64,7 +64,10 @@ export async function POST(request: Request): Promise<Response> {
     text: collectTextFields(body, TEXT_FIELDS),
     minFillTimeMs: serverConfig.security.formMinFillTimeMs,
   });
-  if (spam.spam) {
+  // "too_fast" alone is a weak signal (browser autofill, a prefilled modal): deliver
+  // the lead but flag it for the team. Every other signal is dropped silently.
+  const suspicious = spam.spam && spam.reason === "too_fast";
+  if (spam.spam && !suspicious) {
     console.warn(`${LOG_PREFIX} spam_detected reason=${spam.reason} ref=${reference} ip=${ipHash}`);
     return ok({ reference });
   }
@@ -94,6 +97,7 @@ export async function POST(request: Request): Promise<Response> {
     estimatedReceive: data.estimatedReceive,
     message: data.message,
     consent: data.consent,
+    suspicious: suspicious || undefined,
   };
 
   const delivery = await deliverLead(lead);

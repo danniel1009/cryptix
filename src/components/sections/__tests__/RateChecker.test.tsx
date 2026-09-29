@@ -429,10 +429,10 @@ describe("RateChecker — currency selection", () => {
 
     expect(fromSelect()).toHaveTextContent("SOL");
     expect(toSelect()).toHaveTextContent("BTC");
-    // Untouched amount resets to the coin default (1 SOL).
-    expect(amountInput()).toHaveValue("1.0000");
+    // Untouched amount resets to the coin default (10 SOL).
+    expect(amountInput()).toHaveValue("10.0000");
     expect(marketRow()).toHaveTextContent(new RegExp(`1 SOL = ${marketText("SOL_BTC").replace(".", "\\.")}`));
-    expect(within(toValue()).getByText(estimateNumber("SOL_BTC", 1))).toBeInTheDocument();
+    expect(within(toValue()).getByText(estimateNumber("SOL_BTC", 10))).toBeInTheDocument();
     expect(screen.getByText(CURRENCIES.SOL.name)).toBeInTheDocument();
     await user.click(toSelect());
     expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(1);
@@ -578,7 +578,8 @@ describe("RateChecker — market states", () => {
     renderChecker();
     expect(marketRow()).toHaveTextContent(/100,000\.00 USDT/);
     expect(within(toValue()).getByText("0.00952381")).toBeInTheDocument();
-    const note = interpolate(en.rateChecker.staleNote, { time: formatRelativeTime("en", staleAt) });
+    // The note describes the SHOWN rate's own timestamp (the fixture rates carry UPDATED_AT).
+    const note = interpolate(en.rateChecker.staleNote, { time: formatRelativeTime("en", UPDATED_AT) });
     expect(screen.getByText(note)).toBeInTheDocument();
     expect(screen.getByText(en.common.lastUpdated)).toBeInTheDocument();
   });

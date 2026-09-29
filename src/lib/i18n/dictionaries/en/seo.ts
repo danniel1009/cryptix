@@ -2,7 +2,7 @@
 export const seo = {
   title: "{brand} — Professional Crypto Exchange | Live Rates & Direct Support",
   description:
-    "Check live crypto market prices, calculate an indicative exchange rate (market price + 5%), and request an exchange handled personally by our team. USDT, BTC, ETH, SOL and IDR.",
+    "Live crypto prices for USDT, BTC, ETH, SOL and IDR, indicative rates at market price + {spread}, and exchange requests handled personally by our team.",
   ogTitle: "{brand} — Professional Crypto Exchange",
   ogDescription:
     "Live market data, transparent pricing and direct support. Indicative rates; final terms confirmed by our exchange team.",

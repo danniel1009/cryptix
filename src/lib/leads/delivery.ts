@@ -183,11 +183,17 @@ export async function deliverLead(lead: Lead, options: DeliverLeadOptions = {}):
 
   const channels: LeadChannel[] = outcomes.filter((o) => o.ok).map((o) => o.channel);
   const errors = outcomes.filter((o) => !o.ok).map((o) => `${o.channel}: ${o.error ?? "failed"}`);
-  const delivered = channels.length > 0 || !externalConfigured;
+  // Console-only "delivery" is acceptable in development, never in production:
+  // the visitor would get a reference for a lead nobody receives.
+  const delivered = channels.length > 0 || (!externalConfigured && !serverConfig.isProduction);
 
   // Console channel — always, always redacted.
   channels.push("console");
-  if (!externalConfigured) {
+  if (!externalConfigured && serverConfig.isProduction) {
+    logger.error(
+      "[lead] NO DELIVERY CHANNEL CONFIGURED IN PRODUCTION — set LEAD_WEBHOOK_URL and/or RESEND_API_KEY + RESEND_FROM_EMAIL + CONTACT_EMAIL. The request is rejected so the visitor is not told it was received.",
+    );
+  } else if (!externalConfigured) {
     logger.warn(
       "[lead] No delivery channel configured (set LEAD_WEBHOOK_URL and/or RESEND_API_KEY + RESEND_FROM_EMAIL + CONTACT_EMAIL). The lead is logged to the console only.",
     );

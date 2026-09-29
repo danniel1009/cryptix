@@ -6,8 +6,10 @@ import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { SkipLink } from "@/components/layout/SkipLink";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
+import { serverConfig } from "@/config/server";
 import { siteConfig } from "@/config/site";
 import { interpolate } from "@/lib/i18n/dictionaries";
+import { formatSpread } from "@/lib/i18n/format";
 import { getServerDictionary } from "@/lib/i18n/server";
 import { INTL_LOCALES, type Locale } from "@/lib/i18n/types";
 import { I18nProvider } from "@/lib/i18n/provider";
@@ -41,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const { locale, t } = await getServerDictionary();
   const brand = siteConfig.name;
   const title = interpolate(t.seo.title, { brand });
-  const description = interpolate(t.seo.description, { brand });
+  const description = interpolate(t.seo.description, { brand, spread: formatSpread(locale, serverConfig.exchange.spread) });
   const ogTitle = interpolate(t.seo.ogTitle, { brand });
   const ogDescription = interpolate(t.seo.ogDescription, { brand });
 
@@ -127,7 +129,10 @@ function buildJsonLd(locale: Locale, description: string): string {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { locale, t } = await getServerDictionary();
-  const jsonLd = buildJsonLd(locale, interpolate(t.seo.description, { brand: siteConfig.name }));
+  const jsonLd = buildJsonLd(
+    locale,
+    interpolate(t.seo.description, { brand: siteConfig.name, spread: formatSpread(locale, serverConfig.exchange.spread) }),
+  );
 
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} dark h-full`}>

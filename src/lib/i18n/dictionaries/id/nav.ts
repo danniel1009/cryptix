@@ -7,7 +7,7 @@ import type { nav as en } from "@/lib/i18n/dictionaries/en/nav";
  */
 export const nav: typeof en = {
   exchange: "Cek kurs",
-  market: "Market",
+  market: "Pasar",
   "how-it-works": "Cara kerja",
   security: "Keamanan",
   faq: "FAQ",

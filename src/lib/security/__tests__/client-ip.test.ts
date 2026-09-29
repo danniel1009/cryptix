@@ -7,9 +7,14 @@ function req(headers: Record<string, string>): Request {
 }
 
 describe("getClientIp", () => {
-  it("prefers the first x-forwarded-for hop", () => {
-    expect(getClientIp(req({ "x-forwarded-for": "203.0.113.7, 10.0.0.1, 10.0.0.2" }))).toBe("203.0.113.7");
+  it("trusts only the right-most TRUSTED_PROXY_HOPS entries of x-forwarded-for (default 1)", () => {
+    // client → proxy1 → proxy2 → app: proxy2 appended 10.0.0.2 (proxy1); with one trusted hop
+    // the client "as seen by the trusted proxy" is the entry just before it.
+    expect(getClientIp(req({ "x-forwarded-for": "spoofed, 203.0.113.7, 10.0.0.2" }))).toBe("10.0.0.2");
     expect(getClientIp(req({ "x-forwarded-for": "  203.0.113.7  " }))).toBe("203.0.113.7");
+    process.env.TRUSTED_PROXY_HOPS = "2";
+    expect(getClientIp(req({ "x-forwarded-for": "spoofed, 203.0.113.7, 10.0.0.2" }))).toBe("203.0.113.7");
+    delete process.env.TRUSTED_PROXY_HOPS;
   });
 
   it("falls back to x-real-ip then cf-connecting-ip", () => {

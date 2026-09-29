@@ -3,7 +3,7 @@ import type { seo as en } from "@/lib/i18n/dictionaries/en/seo";
 export const seo: typeof en = {
   title: "{brand} — Crypto Exchange | Cek Kurs & Hubungi Tim Kami",
   description:
-    "Cek harga pasar crypto terkini, hitung kurs indikatif (harga pasar + 5%), dan ajukan exchange yang ditangani langsung oleh tim kami. USDT, BTC, ETH, SOL dan IDR.",
+    "Harga crypto live untuk USDT, BTC, ETH, SOL dan IDR, kurs indikatif harga pasar + {spread}, dan permintaan exchange yang ditangani langsung oleh tim kami.",
   ogTitle: "{brand} — Crypto Exchange Profesional",
   ogDescription:
     "Data pasar live, harga transparan, dan dukungan langsung. Kurs indikatif; ketentuan final dikonfirmasi oleh tim exchange kami.",

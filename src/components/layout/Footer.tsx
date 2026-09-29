@@ -126,7 +126,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col gap-3 border-t border-line pt-6 pb-24 text-xs text-faint sm:flex-row sm:items-center sm:justify-between sm:pb-6 lg:pr-24">
+        <div className="flex flex-col gap-3 border-t border-line pt-6 pb-24 text-xs text-faint sm:flex-row sm:items-center sm:justify-between sm:pb-6 sm:pr-24">
           <p>{interpolate(t.footer.copyright, vars)}</p>
           <p className="sm:text-right">{t.disclaimer.short}</p>
         </div>

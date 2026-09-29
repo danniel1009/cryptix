@@ -31,8 +31,8 @@ export const security: typeof en = {
       body: "Pengiriman formulir dibatasi per alamat IP untuk mengurangi spam dan penyalahgunaan.",
     },
     {
-      title: "Verifikasi data pasar",
-      body: "Harga diperiksa silang dari beberapa penyedia data dan ditandai dengan jelas sebagai tidak terkini bila sudah tidak diperbarui.",
+      title: "Sumber data pasar",
+      body: "Harga diambil dari penyedia data pasar terpercaya dengan penyedia cadangan bila salah satu tidak tersedia, dan ditandai dengan jelas sebagai tidak terkini bila sudah tidak diperbarui.",
     },
   ],
   note: "Kami tidak menyimpan dana pelanggan maupun mengelola kustodi aset di website ini. Setiap exchange diatur dan dikonfirmasi langsung oleh tim kami.",

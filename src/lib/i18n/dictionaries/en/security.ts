@@ -1,7 +1,7 @@
 /**
  * `t.security` — Built with security in mind (section `#security`). Every
  * item describes something this website actually does (HTTPS, server-side
- * secrets, validated + sanitised forms, per-IP rate limits, cross-checked
+ * secrets, validated + sanitised forms, per-IP rate limits, provider-fallback
  * market data). No regulatory, licensing or custody claims.
  *
  * Consumed by: Security section (ruled feature grid).
@@ -33,8 +33,8 @@ export const security = {
       body: "Form submissions are rate-limited per IP address to reduce spam and abuse.",
     },
     {
-      title: "Market data verification",
-      body: "Prices are cross-checked across multiple providers and clearly marked as stale when they are no longer fresh.",
+      title: "Market data sourcing",
+      body: "Prices come from established market data providers with fallback between them, and are clearly marked as stale when they are no longer fresh.",
     },
   ],
   note: "We do not hold customer funds or custody assets on this website. Every exchange is arranged and confirmed personally by our team.",

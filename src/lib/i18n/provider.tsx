@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CurrencyCode } from "@/config/exchange";
+import { DEFAULT_EXCHANGE_SPREAD } from "@/config/exchange";
 import { siteConfig } from "@/config/site";
 import { dictionaries, interpolate, type Dictionary } from "@/lib/i18n/dictionaries";
 import {
@@ -80,7 +81,7 @@ export function I18nProvider({
     const { seo } = dictionaries[locale];
     document.title = interpolate(seo.title, { brand: siteConfig.name });
     const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (meta) meta.content = interpolate(seo.description, { brand: siteConfig.name });
+    if (meta) meta.content = interpolate(seo.description, { brand: siteConfig.name, spread: formatSpread(locale, DEFAULT_EXCHANGE_SPREAD) });
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {

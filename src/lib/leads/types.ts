@@ -21,6 +21,8 @@ export interface LeadMeta {
   ipHash: string;
   /** User agent, control characters stripped, capped at 256 chars ("" when absent). */
   userAgent: string;
+  /** Weak spam signal (e.g. submitted very quickly): delivered, but flagged for the team. */
+  suspicious?: boolean;
 }
 
 export interface ContactLead extends LeadMeta {

@@ -170,7 +170,7 @@ export function ContactForm() {
             <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
             <div>
               <p className="font-medium">{alert.message}</p>
-              {alert.detail ? <p className="mt-1 text-danger/80">{alert.detail}</p> : null}
+              {alert.detail ? <p className="mt-1 text-danger">{alert.detail}</p> : null}
             </div>
           </div>
         ) : null}

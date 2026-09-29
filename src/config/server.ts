@@ -18,6 +18,16 @@ function env(name: string): string | undefined {
   return v && v.trim().length > 0 ? v.trim() : undefined;
 }
 
+function parsePositiveInt(raw: string | undefined, fallback: number, name: string): number {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    console.warn(`[config] Invalid ${name}="${raw}", using ${fallback}`);
+    return fallback;
+  }
+  return n;
+}
+
 function parseSpread(raw: string | undefined): number {
   if (!raw) return DEFAULT_EXCHANGE_SPREAD;
   const n = Number(raw);
@@ -78,10 +88,10 @@ export const serverConfig = {
 
   security: {
     /** Max submissions per IP per window for the form endpoints. */
-    formRateLimitMax: Number(env("FORM_RATE_LIMIT_MAX") ?? 5),
-    formRateLimitWindowMs: Number(env("FORM_RATE_LIMIT_WINDOW_MS") ?? 10 * 60_000),
+    formRateLimitMax: parsePositiveInt(env("FORM_RATE_LIMIT_MAX"), 5, "FORM_RATE_LIMIT_MAX"),
+    formRateLimitWindowMs: parsePositiveInt(env("FORM_RATE_LIMIT_WINDOW_MS"), 10 * 60_000, "FORM_RATE_LIMIT_WINDOW_MS"),
     /** Minimum milliseconds between form render and submit (bot heuristic). */
-    formMinFillTimeMs: Number(env("FORM_MIN_FILL_TIME_MS") ?? 2_500),
+    formMinFillTimeMs: parsePositiveInt(env("FORM_MIN_FILL_TIME_MS"), 1_500, "FORM_MIN_FILL_TIME_MS"),
   },
 } as const;
 

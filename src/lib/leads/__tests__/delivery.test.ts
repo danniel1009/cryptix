@@ -127,17 +127,20 @@ describe("deliverLead — no external channel", () => {
     expect(full).toContain("john.doe@example.com");
   });
 
-  it("in production nothing logged contains the raw email or phone", async () => {
+  it("in production nothing logged contains the raw email or phone, and console-only is NOT a delivery", async () => {
     mockConfig.serverConfig.isProduction = true;
     const logger = makeLogger();
-    await deliverLead(contactLead, { fetchImpl: okFetch(), logger });
+    const result = await deliverLead(contactLead, { fetchImpl: okFetch(), logger });
     const everything = [...logger.info.mock.calls, ...logger.warn.mock.calls, ...logger.error.mock.calls]
       .map((c) => String(c[0]))
       .join("\n");
     expect(everything).not.toContain("john.doe@example.com");
     expect(everything).not.toContain("6281234567890");
     expect(everything).not.toContain("John");
-    expect(logger.info).toHaveBeenCalledTimes(1);
+    // No external channel in production → the lead is NOT considered delivered (route answers 500).
+    expect(result.delivered).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("NO DELIVERY CHANNEL CONFIGURED IN PRODUCTION"));
+    expect(logger.info).not.toHaveBeenCalled();
   });
 });
 
