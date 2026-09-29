@@ -56,6 +56,7 @@ export function SupportedPairs() {
 
         <RevealGroup
           as="ul"
+          role="list"
           className="mt-12 grid grid-cols-1 gap-4 sm:mt-14 sm:grid-cols-2 lg:gap-5 xl:grid-cols-4"
         >
           {FEATURED_PAIRS.map((pair) => (

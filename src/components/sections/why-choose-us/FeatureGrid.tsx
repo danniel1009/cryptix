@@ -45,7 +45,7 @@ export function FeatureGrid({ items, className }: FeatureGridProps) {
   return (
     <div className={cn("w-full border-y border-line", className)}>
       <Container>
-        <RevealGroup as="ul" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup as="ul" role="list" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item, index) => {
             const Icon = ICONS[index % ICONS.length];
             return (

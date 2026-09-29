@@ -32,6 +32,7 @@ export function SecurityGrid({ className }: { className?: string }) {
         <Container>
           <RevealGroup
             as="ul"
+            role="list"
             className="grid grid-cols-1 border-line sm:grid-cols-2 sm:border-x lg:grid-cols-3"
           >
             {t.security.items.map((item, index) => {

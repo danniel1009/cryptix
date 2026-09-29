@@ -86,6 +86,10 @@ export interface RevealGroupProps {
   amount?: number | "some" | "all";
   as?: RevealTag;
   className?: string;
+  /** Landmark/list semantics for the wrapper (e.g. role="list" on a <ul>). */
+  role?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
 /**
@@ -100,6 +104,9 @@ export function RevealGroup({
   amount,
   as = "div",
   className,
+  role,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: RevealGroupProps) {
   const MotionTag = motion[as] as typeof motion.div;
   const variants: Variants = {
@@ -109,6 +116,9 @@ export function RevealGroup({
   return (
     <MotionTag
       className={className}
+      role={role}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       initial="hidden"
       whileInView="visible"
       viewport={{ once, margin: "-80px", amount }}
