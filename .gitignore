@@ -42,3 +42,6 @@ next-env.d.ts
 
 # isolated production build output (NEXT_DIST_DIR)
 .next-build/
+
+# server credentials for scripts/deploy.sh
+deploy/.deployrc

@@ -1,0 +1,23 @@
+[Unit]
+Description=Cryptix web (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__APP_PATH__
+EnvironmentFile=__APP_PATH__/.env.production
+Environment=HOME=__APP_PATH__
+ExecStart=/usr/bin/npm run start -- -p ${PORT}
+Restart=always
+RestartSec=3
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=__APP_PATH__
+
+[Install]
+WantedBy=multi-user.target

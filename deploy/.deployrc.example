@@ -1,0 +1,9 @@
+# Copy to deploy/.deployrc (gitignored) and fill in once the DewaWeb server exists.
+DEPLOY_HOST=
+DEPLOY_USER=root
+DEPLOY_SSH_PORT=22
+DEPLOY_KEY=$HOME/.ssh/cryptix_vps
+DEPLOY_PATH=/opt/cryptix
+DEPLOY_SERVICE=cryptix-web
+DEPLOY_APP_USER=cryptix
+DEPLOY_PORT=3000
