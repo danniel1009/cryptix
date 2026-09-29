@@ -2,7 +2,6 @@
 
 import { useId } from "react";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import { CURRENCIES } from "@/config/exchange";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,20 @@ import type { RateCheckerState } from "./useRateChecker";
 const PANEL =
   "rounded-2xl border border-line/60 bg-surface-2 p-5 transition-[border-color,box-shadow] duration-200 sm:p-6";
 /** The amount is the biggest text in the card (docs/CONVERTER.md). */
-const BIG_NUMBER = "nums font-mono text-3xl font-medium leading-tight tracking-tight sm:text-5xl";
+const BIG_NUMBER = "nums font-mono font-medium leading-tight tracking-tight";
+
+/**
+ * Size class for the big amounts: long values (e.g. "15,700,000" or
+ * "0.00952381") step down on narrow screens so they never clip or wrap
+ * mid-digit next to the coin chip; short values get the full display size.
+ */
+export function bigNumberSize(text: string): string {
+  const len = text.replace(/\s/g, "").length;
+  if (len <= 7) return "text-4xl sm:text-5xl";
+  if (len <= 10) return "text-3xl sm:text-5xl";
+  if (len <= 13) return "text-2xl sm:text-4xl";
+  return "text-xl sm:text-3xl";
+}
 
 /**
  * The two stacked converter panels ("From" with the amount input, "To" with the
@@ -36,7 +48,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
   const invalid = hint?.kind === "invalid";
   const fromHelper =
     hint === null
-      ? CURRENCIES[rc.from].name
+      ? t.common.currencyNames[rc.from]
       : hint.kind === "empty"
         ? t.rateChecker.enterAmount
         : hint.kind === "invalid"
@@ -53,7 +65,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
     ? t.common.loading
     : !rc.rateAvailable
       ? t.rateChecker.estimateUnavailable
-      : CURRENCIES[rc.to].name;
+      : t.common.currencyNames[rc.to];
   /** What assistive tech hears when there is no number to read. */
   const emptyStatusText = rc.loading
     ? t.common.loading
@@ -89,7 +101,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
               labelledBy={`${fromLabelId} ${amountLabelId}`}
               describedBy={fromHelperId}
               invalid={invalid}
-              className="mt-2"
+              className={cn("mt-2", bigNumberSize(rc.amountText))}
             />
             <p id={fromHelperId} className={cn("mt-2 truncate text-xs", fromHelperTone)}>
               {fromHelper}
@@ -127,7 +139,7 @@ export function ConverterPanels({ rc }: { rc: RateCheckerState }) {
               aria-live="polite"
               aria-atomic="true"
               aria-labelledby={toLabelId}
-              className={cn(BIG_NUMBER, "mt-2 break-all text-fg transition-opacity duration-300", stale && "opacity-70")}
+              className={cn(BIG_NUMBER, bigNumberSize(estimateText ?? ""), "mt-2 break-all text-fg transition-opacity duration-300", stale && "opacity-70")}
             >
               {estimate !== null && estimateText ? (
                 <>

@@ -7,7 +7,7 @@
  * re-export these strings so every surface shows identical wording.
  */
 export const disclaimer = {
-  short: "Indicative rate. Final exchange rate will be confirmed by our exchange team.",
+  short: "Indicative rate. Final exchange rate will be confirmed by our team.",
   full: "Market prices shown on this website are for reference purposes only. Our displayed rate includes a {spread} spread over the referenced market price. Final exchange rates, availability and transaction terms will be confirmed by our exchange team.",
   formRate:
     "The displayed rate is indicative only. Final exchange rate and transaction details will be confirmed by our exchange team.",

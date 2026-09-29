@@ -322,7 +322,7 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
 
   const pair = getPairById(values.pairId) ?? SUPPORTED_PAIRS[0];
   const rate = getRate(pair.id);
-  const amount = values.amountValue ?? parseAmountInput(values.amountText);
+  const amount = values.amountValue ?? parseAmountInput(values.amountText, locale);
   const canCompute = marketStatus !== "unavailable" && rate !== undefined;
 
   const computed = canCompute && rate ? calculateReceive(rate, amount) : 0;
@@ -351,7 +351,7 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
   } else if (values.estimateText.trim().length === 0) {
     estimateNumber = null;
   } else {
-    estimateNumber = values.estimateValue ?? parseAmountInput(values.estimateText);
+    estimateNumber = values.estimateValue ?? parseAmountInput(values.estimateText, locale);
   }
   const estimate = estimateNumber !== null && Number.isFinite(estimateNumber) && estimateNumber > 0 ? estimateNumber : null;
 
@@ -388,9 +388,12 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
       if (prev.pairId === next) return prev;
       // A pair change invalidates a prefilled estimate (it belonged to the old pair);
       // a manual edit is the visitor's own number and is kept.
-      return prev.estimateEdited
+      const receiveChanges = getPairById(prev.pairId)?.to !== getPairById(next)?.to;
+      // A manually edited estimate only survives while the RECEIVE currency stays the same —
+      // a BTC number must never be re-labelled as IDR.
+      return prev.estimateEdited && !receiveChanges
         ? { ...prev, pairId: next }
-        : { ...prev, pairId: next, estimateText: "", estimateValue: null };
+        : { ...prev, pairId: next, estimateText: "", estimateValue: null, estimateEdited: false };
     });
     setErrors((prev) => withoutError(withoutError(prev, "pairId"), "amount"));
     setFormError(null);
@@ -469,8 +472,10 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
 
       const validation = validateExchangeRequest(candidate);
       if (!validation.success) {
-        showFieldErrors(pickFieldErrors(validation.errors));
-        setFormError(validation.errors._form ? "unknown" : null);
+        const picked = pickFieldErrors(validation.errors);
+        showFieldErrors(picked);
+        // Errors only on non-rendered fields (honeypot / timestamp) must still surface a message.
+        setFormError(validation.errors._form || Object.keys(picked).length === 0 ? "unknown" : null);
         return;
       }
 

@@ -125,23 +125,43 @@ export function formatRelativeTime(locale: Locale, date: Date | string | number,
 }
 
 /**
- * Parse a user-typed amount in either locale convention.
- * Accepts "1,000.50", "1.000,50", "1000.5", "1000,5". Returns NaN when invalid.
+ * Parse a user-typed amount. Accepts "1,000.50", "1.000,50", "1000.5",
+ * "1000,5", "15,700,000", "15.700.000". Returns NaN when invalid.
+ *
+ * Rules (in order):
+ *  - both separators present → the LAST one is the decimal separator;
+ *  - one kind of separator, repeated → grouping ("100,000,000");
+ *  - one separator, once: with a locale, its DECIMAL separator wins ("1.5" en,
+ *    "1,5" id); the locale's GROUP separator counts as grouping only when
+ *    exactly three digits follow ("100,000" en → 100000; "1,5" en → 1.5);
+ *    without a locale the old heuristic applies (the separator is decimal,
+ *    unless exactly three digits follow and the integer part is non-empty).
  */
-export function parseAmountInput(raw: string): number {
+export function parseAmountInput(raw: string, locale?: Locale): number {
   const s = raw.trim().replace(/\s+/g, "");
   if (!s) return NaN;
   if (!/^[\d.,]+$/.test(s)) return NaN;
-  const lastComma = s.lastIndexOf(",");
-  const lastDot = s.lastIndexOf(".");
-  let normalized: string;
-  if (lastComma === -1 && lastDot === -1) normalized = s;
-  else if (lastComma > lastDot) {
-    // comma is the decimal separator
-    normalized = s.replace(/\./g, "").replace(",", ".");
-  } else {
-    normalized = s.replace(/,/g, "");
+  const commas = (s.match(/,/g) ?? []).length;
+  const dots = (s.match(/\./g) ?? []).length;
+  let decimalSep: "," | "." | null = null;
+  if (commas > 0 && dots > 0) {
+    decimalSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+  } else if (commas + dots === 1) {
+    const sep: "," | "." = commas === 1 ? "," : ".";
+    const idx = s.indexOf(sep);
+    const groupLike = s.length - idx - 1 === 3 && idx > 0;
+    const localeDecimal: "," | "." | null = locale ? (locale === "id" ? "," : ".") : null;
+    if (localeDecimal) decimalSep = sep === localeDecimal ? sep : groupLike ? null : sep;
+    else decimalSep = groupLike ? null : sep;
+  } // else: one kind of separator repeated → grouping only
+  const groupSep = decimalSep === "," ? "." : decimalSep === "." ? "," : null;
+  let normalized = s;
+  if (decimalSep === null) normalized = s.replace(/[.,]/g, "");
+  else {
+    if (groupSep) normalized = normalized.split(groupSep).join("");
+    normalized = normalized.replace(decimalSep, ".");
   }
+  if (!/^\d+(\.\d+)?$/.test(normalized) && !/^\d+\.$/.test(normalized) && !/^\.\d+$/.test(normalized)) return NaN;
   const n = Number(normalized);
   return Number.isFinite(n) ? n : NaN;
 }

@@ -11,7 +11,7 @@ The rate checker (`#exchange`) must use a **converter card** composition, not a 
 │                    ⇅  (swap button, centred, overlapping both panels)
 │  ┌─────────────────────────────────────────┐  │
 │  │  To                      ● USDT    ▼    │  │
-│  │  83,095.76                              │  │   ← LARGE calculated amount (read-only)
+│  │  79,138.82                              │  │   ← LARGE calculated amount (read-only): market ÷ 1.05
 │  └─────────────────────────────────────────┘  │
 │             1 BTC = 83,095.76 USDT            │   ← live market rate line
 │   Market rate   1 BTC = 83,095.76 USDT        │
@@ -34,5 +34,5 @@ Rules:
   EN "Indicative rate. Final exchange rate will be confirmed by our team."   ID "Kurs indikatif. Kurs final akan dikonfirmasi oleh tim kami."
 - **Spread direction** (unchanged from the original brief — "apply the 5% spread correctly according to the quote direction"): the customer always pays *market + spread* on the asset they RECEIVE, so `receive = amount × marketRate / (1 + spread)` for every pair and direction. USDT → BTC: our rate 1 BTC = 105,000 USDT when market is 100,000. BTC → USDT: our rate 1 BTC = 95,238.10 USDT (the customer receives less USDT than market). Tooltip: "Our rate applies a 5% spread on the asset you receive."
 - **CTA**: one large full-width pill labelled "Request exchange" (never "Convert…"); opens the exchange request modal with From, To, amount, estimated receive and the current indicative rate pre-filled.
-- **Exchange request modal** header summary: "You are requesting: 1 BTC → 83,095.76 USDT" and "Indicative rate: 1 BTC = 79,138.82 USDT" (captured when opened, recalculated live if the customer edits pair/amount). Customer fields: full name, WhatsApp number, email, message (+ consent). Buttons: "Send exchange request" and "Chat directly on WhatsApp" (contextual message). Pair/amount/estimate remain editable in a compact details area. Never implies execution.
+- **Exchange request modal** header summary: "You are requesting: 1 BTC → 79,138.82 USDT" and "Indicative rate: 1 BTC = 79,138.82 USDT" (the live indicative rate whenever the feed is available — recalculated as the customer edits pair/amount — falling back to the rate captured when the CTA was clicked only while the market feed is unavailable). Customer fields: full name, WhatsApp number, email, message (+ consent). Buttons: "Send exchange request" and "Chat directly on WhatsApp" (contextual message). Pair/amount/estimate remain editable in a compact details area. Never implies execution.
 - UX flow: select what I have → enter amount → select what I want → see indicative rate → see our rate (+5%) → request exchange → contact our team.

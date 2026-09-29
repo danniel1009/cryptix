@@ -8,6 +8,7 @@ import { CurrencyIcon } from "@/components/ui/CurrencyIcon";
 import { REVEAL_EASE } from "@/components/ui/Reveal";
 import { CURRENCIES, type CurrencyCode } from "@/config/exchange";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export interface CurrencySelectProps {
@@ -31,6 +32,7 @@ export interface CurrencySelectProps {
  * passed in `options` (always a subset of SUPPORTED_PAIRS) are selectable.
  */
 export function CurrencySelect({ id, label, value, options, onChange, align = "right", className }: CurrencySelectProps) {
+  const { t } = useI18n();
   const reduced = useReducedMotionSafe();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -107,7 +109,7 @@ export function CurrencySelect({ id, label, value, options, onChange, align = "r
       case "Enter":
       case " ": {
         event.preventDefault();
-        const code = options[activeIndex];
+        const code = options[Math.min(activeIndex, Math.max(0, options.length - 1))];
         if (code) select(code);
         return;
       }
@@ -129,7 +131,8 @@ export function CurrencySelect({ id, label, value, options, onChange, align = "r
     }
   };
 
-  const activeCode = options[activeIndex];
+  const safeActiveIndex = Math.min(activeIndex, Math.max(0, options.length - 1));
+  const activeCode = options[safeActiveIndex];
 
   return (
     <div ref={rootRef} className={cn("relative shrink-0", className)}>
@@ -183,7 +186,7 @@ export function CurrencySelect({ id, label, value, options, onChange, align = "r
             {options.map((code, index) => {
               const meta = CURRENCIES[code];
               const selected = code === value;
-              const active = index === activeIndex;
+              const active = index === safeActiveIndex;
               return (
                 <li
                   key={code}
@@ -207,7 +210,7 @@ export function CurrencySelect({ id, label, value, options, onChange, align = "r
                         </Badge>
                       ) : null}
                     </span>
-                    <span className="truncate text-xs text-muted">{meta.name}</span>
+                    <span className="truncate text-xs text-muted">{t.common.currencyNames[meta.code]}</span>
                   </span>
                   {selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-accent" /> : null}
                 </li>

@@ -259,9 +259,12 @@ export function useRateChecker(): RateCheckerState {
     });
   }, []);
 
-  const setAmountText = useCallback((text: string) => {
-    setState((s) => ({ ...s, draft: text, amount: parseAmountInput(text), touched: true }));
-  }, []);
+  const setAmountText = useCallback(
+    (text: string) => {
+      setState((s) => ({ ...s, draft: text, amount: parseAmountInput(text, locale), touched: true }));
+    },
+    [locale],
+  );
 
   const commitAmount = useCallback(() => {
     setState((s) => (s.draft !== null && isValidAmount(s.amount) ? { ...s, draft: null } : s));
@@ -308,16 +311,19 @@ export function useRateChecker(): RateCheckerState {
       if (!reverse) return s;
       const next: CheckerState = { ...s, from: reverse.from, to: reverse.to };
       if (estimatedReceive !== null) {
-        const rounded = roundToDecimals(estimatedReceive, CURRENCIES[reverse.from].inputDecimals);
-        if (isValidAmount(rounded)) {
-          next.amount = rounded;
+        // Carry EXACTLY the value the customer saw in the "To" panel (same
+        // formatting, then parsed back), never a more precise or rounded-up number.
+        const shown = parseAmountInput(formatAmount(estimatedReceive, s.to, { withSymbol: false }), locale);
+        const carried = isValidAmount(shown) ? shown : roundToDecimals(estimatedReceive, CURRENCIES[reverse.from].inputDecimals);
+        if (isValidAmount(carried)) {
+          next.amount = carried;
           next.draft = null;
           next.touched = true;
         }
       }
       return next;
     });
-  }, [estimatedReceive]);
+  }, [estimatedReceive, formatAmount, locale]);
 
   const amountText = draft ?? (Number.isFinite(amount) ? formatAmount(amount, from, { withSymbol: false }) : "");
   const hint = getAmountHint(draft, amount, from);

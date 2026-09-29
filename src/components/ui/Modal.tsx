@@ -238,7 +238,13 @@ export function Modal({
                   </p>
                 ) : null}
               </div>
-              <IconButton label={closeLabel} icon={<X />} onClick={onClose} className="-mr-2 -mt-1" />
+              <IconButton
+                label={closeLabel}
+                icon={<X />}
+                onClick={onClose}
+                disabled={dismissible === false}
+                className="-mr-2 -mt-1"
+              />
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 scrollbar-thin sm:px-8">{children}</div>
             {footer ? (

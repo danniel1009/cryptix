@@ -39,4 +39,12 @@ export const common: typeof en = {
   amount: "Jumlah",
   whatsapp: "WhatsApp",
   email: "Email",
+  /** Localised currency names (config CURRENCIES[code].name is English). */
+  currencyNames: {
+    USDT: "Tether USD",
+    BTC: "Bitcoin",
+    SOL: "Solana",
+    ETH: "Ethereum",
+    IDR: "Rupiah Indonesia",
+  },
 };

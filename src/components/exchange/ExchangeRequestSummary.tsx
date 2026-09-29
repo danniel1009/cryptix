@@ -134,7 +134,7 @@ export function ExchangeRequestSummary({ form, labelId }: ExchangeRequestSummary
 
         <div className="border-t border-accent/15 pt-4">{rateBlock}</div>
 
-        <div aria-live="polite" className={cn("flex flex-col gap-1.5", marketNotes.length === 0 && "hidden")}>
+        <div aria-live="polite" className="flex flex-col gap-1.5 empty:hidden">
           {marketNotes.map((note) => (
             <p
               key={note.key}

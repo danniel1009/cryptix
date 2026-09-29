@@ -193,3 +193,32 @@ describe("parseAmountInput", () => {
     expect(parseAmountInput("1e3")).toBeNaN();
   });
 });
+
+describe("parseAmountInput — locale-aware grouping", () => {
+  it("treats a single locale group separator followed by three digits as grouping", () => {
+    expect(parseAmountInput("100,000", "en")).toBe(100000);
+    expect(parseAmountInput("500,000", "en")).toBe(500000);
+    expect(parseAmountInput("100.000", "id")).toBe(100000);
+    expect(parseAmountInput("1,000", "en")).toBe(1000);
+    expect(parseAmountInput("1.000", "id")).toBe(1000);
+  });
+  it("keeps the locale decimal separator as decimal even with three digits after it", () => {
+    expect(parseAmountInput("1.000", "en")).toBe(1);
+    expect(parseAmountInput("1,000", "id")).toBe(1);
+    expect(parseAmountInput("1.5", "en")).toBe(1.5);
+    expect(parseAmountInput("1,5", "id")).toBe(1.5);
+  });
+  it("accepts the other convention when unambiguous", () => {
+    expect(parseAmountInput("1,5", "en")).toBe(1.5);
+    expect(parseAmountInput("1.5", "id")).toBe(1.5);
+    expect(parseAmountInput("15,700,000", "en")).toBe(15700000);
+    expect(parseAmountInput("15.700.000", "id")).toBe(15700000);
+    expect(parseAmountInput("15,700,000", "id")).toBe(15700000);
+    expect(parseAmountInput("1.000.000,50", "en")).toBe(1000000.5);
+  });
+  it("rejects malformed grouping", () => {
+    expect(parseAmountInput("1,00,000", "en")).toBe(100000); // lenient: repeated separator = grouping
+    expect(parseAmountInput("1,000.000.5", "en")).toBeNaN();
+    expect(parseAmountInput("abc", "en")).toBeNaN();
+  });
+});

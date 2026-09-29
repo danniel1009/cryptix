@@ -56,6 +56,8 @@ export function AmountInput({
       className={cn(
         "nums block w-full min-w-0 border-0 bg-transparent p-0 font-mono text-3xl font-medium leading-tight tracking-tight text-fg",
         "placeholder:text-faint/80 placeholder:font-normal focus:outline-none focus-visible:outline-none sm:text-5xl",
+        // The panel carries the focus ring (focus-within); under forced colours box-shadows vanish, so restore an outline there.
+        "forced-colors:focus-visible:outline-2 forced-colors:focus-visible:outline-offset-4 forced-colors:focus-visible:outline-[Highlight]",
         invalid && "text-danger",
         className,
       )}

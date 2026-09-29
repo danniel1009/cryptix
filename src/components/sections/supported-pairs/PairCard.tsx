@@ -30,7 +30,6 @@ export interface PairCardProps {
 export function PairCard({ pair, rate, status, onCheckRate }: PairCardProps) {
   const { t, formatPrice } = useI18n();
   const from = CURRENCIES[pair.from];
-  const to = CURRENCIES[pair.to];
   const label = pairLabel(pair);
   const showRate = rate !== undefined && status !== "unavailable";
   const stale = status === "stale";
@@ -56,10 +55,10 @@ export function PairCard({ pair, rate, status, onCheckRate }: PairCardProps) {
         <h3 className="nums font-mono text-lg font-medium tracking-tight text-fg">{label}</h3>
         <p className="mt-1 text-sm text-muted">
           <span className="sr-only">{t.pairs.youSend}: </span>
-          {from.name}
+          {t.common.currencyNames[pair.from]}
           <span aria-hidden="true"> → </span>
           <span className="sr-only">{t.pairs.youReceive}: </span>
-          {to.name}
+          {t.common.currencyNames[pair.to]}
         </p>
       </div>
 

@@ -25,6 +25,7 @@ import { StatusDot } from "./StatusDot";
 
 /** Overlapping coin marks + "BTC / USDT" (mono) with the currency names underneath. */
 export function PairCell({ base, quote, className }: { base: CurrencyCode; quote: CurrencyCode; className?: string }) {
+  const { t } = useI18n();
   return (
     <div className={cn("flex min-w-0 items-center gap-3.5", className)}>
       <span className="flex shrink-0 -space-x-2.5" aria-hidden="true">
@@ -33,7 +34,7 @@ export function PairCell({ base, quote, className }: { base: CurrencyCode; quote
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="font-mono text-sm font-medium tracking-tight text-fg">{`${base} / ${quote}`}</span>
-        <span className="truncate text-xs text-faint">{`${CURRENCIES[base].name} · ${CURRENCIES[quote].name}`}</span>
+        <span className="truncate text-xs text-faint">{`${t.common.currencyNames[base]} · ${t.common.currencyNames[quote]}`}</span>
       </span>
     </div>
   );

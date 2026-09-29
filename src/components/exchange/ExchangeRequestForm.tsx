@@ -70,6 +70,14 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
 
   const { values, errors, formError, pair, rate, marketStatus, lastUpdatedAt, estimateText, estimateMode, canCompute, detailsOpen } =
     form;
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+  const detailsWasOpen = useRef(detailsOpen);
+  // "Edit details" unmounts its own button; move focus into the revealed group so
+  // keyboard/screen-reader users are not dropped on <body>.
+  useEffect(() => {
+    if (detailsOpen && !detailsWasOpen.current) detailsRef.current?.focus({ preventScroll: false });
+    detailsWasOpen.current = detailsOpen;
+  }, [detailsOpen]);
   const fields = t.exchangeRequest.fields;
   const limits = amountLimitsFor(pair);
 
@@ -132,12 +140,14 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
       {/* ─────────────── Exchange details (compact, editable) ─────────────── */}
       {detailsOpen ? (
         <motion.div
+          ref={detailsRef}
+          tabIndex={-1}
           role="group"
           aria-labelledby={ids.exchange}
           initial={{ opacity: 0, y: reduced ? 0 : -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0 : 0.3, ease: EASE }}
-          className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-2/40 p-4 sm:p-5"
+          className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-2/40 p-4 outline-none sm:p-5"
         >
           <GroupLabel id={ids.exchange}>{t.exchangeRequest.sectionExchange}</GroupLabel>
           <PairSelect
