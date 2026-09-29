@@ -41,7 +41,7 @@ export type ButtonAsAnchorProps = ButtonBaseProps &
 export type ButtonProps = ButtonAsButtonProps | ButtonAsAnchorProps;
 
 const BASE =
-  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold " +
+  "relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium " +
   "transition-[background-color,border-color,color,box-shadow,opacity] duration-200 ease-out-expo " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
   "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:pointer-events-none";
@@ -62,8 +62,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
 const SIZES: Record<ButtonSize, string> = {
   sm: "h-9 px-4 text-xs",
   md: "h-11 px-5 text-sm",
-  lg: "h-12 px-6 text-sm uppercase tracking-[0.12em]",
-  xl: "h-14 px-8 text-[15px] uppercase tracking-[0.14em]",
+  lg: "h-12 px-6 text-[15px] tracking-[-0.01em]",
+  xl: "h-14 px-8 text-base tracking-[-0.01em]",
 };
 
 const SPINNER_SIZE: Record<ButtonSize, number> = { sm: 14, md: 16, lg: 18, xl: 20 };
