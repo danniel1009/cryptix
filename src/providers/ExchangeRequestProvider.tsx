@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import type { PairId } from "@/config/exchange";
+import type { CurrencyCode, PairId } from "@/config/exchange";
 
 /**
  * Values carried from the rate checker into the exchange request form.
@@ -13,6 +13,17 @@ export interface ExchangeRequestPrefill {
   amount?: number;
   /** Estimated receive in the RECEIVED currency, as a number. */
   estimatedReceive?: number;
+  /** The indicative rate shown to the customer when they clicked "Request exchange". */
+  rateSnapshot?: {
+    /** "1 quoteBase = marketPriceDisplay quoteCurrency" at market. */
+    marketPriceDisplay: number;
+    /** "1 quoteBase = ourPriceDisplay quoteCurrency" after the spread. */
+    ourPriceDisplay: number;
+    quoteBase: CurrencyCode;
+    quoteCurrency: CurrencyCode;
+    spread: number;
+    capturedAt: string;
+  };
 }
 
 interface ExchangeRequestContextValue {

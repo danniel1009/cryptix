@@ -9,11 +9,13 @@ export const faq: typeof en = {
   eyebrow: "FAQ",
   title: "Pertanyaan yang sering diajukan",
   description: "Jawaban singkat untuk pertanyaan umum tentang kurs, proses, dan cara menghubungi kami.",
+  moreHelp: "Masih ada pertanyaan?",
+  moreHelpCta: "Hubungi tim kami",
   items: [
     {
       question: "Pair exchange apa saja yang tersedia?",
       answer:
-        "Seluruh pair yang tersedia tercantum di bagian Pair exchange yang didukung pada halaman ini. Saat ini kami melayani exchange USDT, ETH, dan SOL ke BTC, serta USDT ke Rupiah (IDR). Pair yang tidak tercantum tidak tersedia.",
+        "Seluruh pair yang tersedia tercantum di bagian Pair exchange yang didukung pada halaman ini. Saat ini kami melayani exchange USDT, ETH, dan SOL ke BTC, serta USDT ke Rupiah (IDR), dan setiap pair tersebut juga dapat diajukan dalam arah sebaliknya (misalnya BTC ke USDT). Pair yang tidak tercantum tidak tersedia.",
     },
     {
       question: "Bagaimana kurs exchange dihitung?",

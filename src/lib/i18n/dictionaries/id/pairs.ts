@@ -12,6 +12,9 @@ export const pairs: typeof en = {
   youSend: "Anda kirim",
   youReceive: "Anda terima",
   checkRate: "Cek kurs",
+  checkRateFor: "Cek kurs untuk {pair}",
   indicativeLabel: "Indikatif",
   perPairNote: "Kurs bersifat indikatif dan diperbarui mengikuti data pasar.",
+  reverseNote:
+    "Setiap pair juga dapat diajukan dalam arah sebaliknya (misalnya BTC → USDT). Gunakan pengecek kurs untuk memilih aset yang Anda miliki dan aset yang ingin Anda terima.",
 };

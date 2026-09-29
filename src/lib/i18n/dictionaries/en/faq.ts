@@ -4,17 +4,21 @@
  * Every answer makes clear that pricing is indicative and the transaction is
  * confirmed manually by the team.
  *
- * Consumed by: Faq section (Accordion) and the FAQPage JSON-LD in layout.
+ * Consumed by: Faq section (Accordion + the FAQPage JSON-LD it renders).
+ * `moreHelp` / `moreHelpCta` form the "Still have a question? Contact our
+ * team" line under the accordion (the CTA links to #contact).
  */
 export const faq = {
   eyebrow: "FAQ",
   title: "Frequently asked questions",
   description: "Short answers to common questions about rates, the process and how to reach us.",
+  moreHelp: "Still have a question?",
+  moreHelpCta: "Contact our team",
   items: [
     {
       question: "What exchange pairs are available?",
       answer:
-        "All available pairs are listed in the Supported exchange pairs section of this page. We currently exchange USDT, ETH and SOL into BTC, and USDT into Indonesian Rupiah (IDR). Pairs that are not listed are not available.",
+        "All available pairs are listed in the Supported exchange pairs section of this page. We currently exchange USDT, ETH and SOL into BTC, and USDT into Indonesian Rupiah (IDR), and each of these pairs can also be requested in the opposite direction (for example BTC into USDT). Pairs that are not listed are not available.",
     },
     {
       question: "How is the exchange rate calculated?",

@@ -1,4 +1,5 @@
 /** @vitest-environment node */
+import { SUPPORTED_PAIRS } from "@/config/exchange";
 import { describe, expect, it, vi } from "vitest";
 import { MARKET_REFRESH_INTERVAL_MS, MARKET_STALE_AFTER_MS, MARKET_UNAVAILABLE_AFTER_MS } from "@/config/market";
 import type { MarketProviderName, ServerConfig } from "@/config/server";
@@ -53,7 +54,7 @@ describe("createMarketService", () => {
     expect(source.fetchAll).toHaveBeenCalledTimes(1);
     expect(b).toBe(a);
     expect(a.status).toBe("live");
-    expect(a.rates.map((r) => r.pairId).sort()).toEqual(["ETH_BTC", "SOL_BTC", "USDT_BTC", "USDT_IDR"]);
+    expect(a.rates.map((r) => r.pairId).sort()).toEqual(["BTC_ETH", "BTC_SOL", "BTC_USDT", "ETH_BTC", "IDR_USDT", "SOL_BTC", "USDT_BTC", "USDT_IDR"]);
     expect(a.spread).toBe(0.05);
     expect(a.sources).toEqual(["binance"]);
     expect(a.error).toBeNull();
@@ -103,7 +104,7 @@ describe("createMarketService", () => {
     clock.advance(MARKET_REFRESH_INTERVAL_MS);
     const failed = await svc.getMarketSnapshot({ force: true });
     expect(failed.quotes).toEqual(good.quotes); // last-good retained
-    expect(failed.rates).toHaveLength(4);
+    expect(failed.rates).toHaveLength(SUPPORTED_PAIRS.length);
     expect(failed.updatedAt).toBe(goodUpdatedAt); // did NOT advance
     expect(failed.status).toBe("live"); // still within the stale threshold
     expect(failed.error).toMatch(/^binance: Request timed out/);

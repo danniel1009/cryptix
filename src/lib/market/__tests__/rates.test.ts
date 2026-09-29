@@ -106,7 +106,7 @@ describe("computeIndicativeRates — the four supported pairs (spread 0.05)", ()
     ];
     expect(computeIndicativeRates(junk, SPREAD)).toEqual([]);
     const ids = computeIndicativeRates([q("USDT", "IDR", 16_485)], SPREAD).map((r) => r.pairId);
-    expect(ids).toEqual(["USDT_IDR"]);
+    expect(ids.sort()).toEqual(["IDR_USDT", "USDT_IDR"]);
   });
 
   it("spread 0 → ourRate === marketRate and ourPriceDisplay === marketPriceDisplay", () => {
@@ -240,7 +240,7 @@ describe("buildSnapshot", () => {
     const snap = buildSnapshot({ quotes, spread: 0.05, updatedAt: T0, generatedAt: T1 });
     expect(snap.status).toBe("live");
     expect(snap.sources).toEqual(["binance", "indodax"]);
-    expect(snap.rates.map((r) => r.pairId).sort()).toEqual(["ETH_BTC", "USDT_BTC", "USDT_IDR"]);
+    expect(snap.rates.map((r) => r.pairId).sort()).toEqual(["BTC_ETH", "BTC_USDT", "ETH_BTC", "IDR_USDT", "USDT_BTC", "USDT_IDR"]);
     expect(snap.error).toBeNull();
     expect(snap.spread).toBe(0.05);
     const stale = buildSnapshot({ quotes, spread: 0.05, updatedAt: T0, generatedAt: new Date(Date.parse(T0) + MARKET_STALE_AFTER_MS).toISOString() });

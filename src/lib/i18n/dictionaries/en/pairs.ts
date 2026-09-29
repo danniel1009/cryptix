@@ -17,6 +17,10 @@ export const pairs = {
   youSend: "You send",
   youReceive: "You receive",
   checkRate: "Check rate",
+  /** Accessible button name. `{pair}` — the pair label such as "USDT → BTC". */
+  checkRateFor: "Check rate for {pair}",
   indicativeLabel: "Indicative",
   perPairNote: "Rates are indicative and refresh with market data.",
+  reverseNote:
+    "Each pair can also be requested in the opposite direction (for example BTC → USDT). Use the rate checker to select what you have and what you want to receive.",
 };

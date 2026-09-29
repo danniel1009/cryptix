@@ -6,6 +6,8 @@ export const whyChooseUs: typeof en = {
   title: "Mengapa memilih kami",
   description:
     "Cara yang jelas dan langsung untuk menukar aset digital bersama tim yang dapat Anda ajak bicara.",
+  statement:
+    "Harga transparan, data pasar live, dan orang sungguhan di ujung sana — menukar aset digital tanpa kerumitan platform trading.",
   items: [
     {
       title: "Harga transparan",

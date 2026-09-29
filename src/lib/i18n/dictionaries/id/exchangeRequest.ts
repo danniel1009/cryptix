@@ -36,4 +36,16 @@ export const exchangeRequest: typeof en = {
   prefillNote: "Terisi dari cek kurs — Anda dapat mengubah nilai apa pun.",
   stepLabel: "Langkah {n} dari {total}",
   noAccountNote: "Tidak perlu akun. Tidak ada transaksi yang dieksekusi tanpa konfirmasi tim kami.",
+  sectionContact: "Data kontak Anda",
+  sectionExchange: "Detail exchange",
+  amountHint: "Minimum {min}, maksimum {max}.",
+  estimateEditedNote: "Diubah manual. Pembaruan live untuk kolom ini dijeda.",
+  recalculate: "Hitung ulang",
+  estimateUnavailableHint:
+    "Kurs live tidak tersedia saat ini. Anda dapat memasukkan jumlah yang Anda harapkan; tim kami akan mengonfirmasinya.",
+  marketNote: {
+    reconnecting: "Menyambung ulang ke data pasar live. Estimasi menggunakan data terbaru yang tersedia.",
+    polling: "Streaming live tidak tersedia. Harga diperbarui secara berkala.",
+    offline: "Anda tampaknya sedang offline. Estimasi menggunakan data terakhir yang diterima.",
+  },
 };

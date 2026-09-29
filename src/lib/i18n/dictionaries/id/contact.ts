@@ -27,4 +27,9 @@ export const contact: typeof en = {
   whatsappLabel: "WhatsApp",
   emailLabel: "Email",
   responseTime: "Kami biasanya membalas pada jam kerja.",
+  formTitle: "Kirim pesan kepada kami",
+  formNote: "Semua kolom wajib diisi. Tim kami membalas melalui WhatsApp atau email.",
+  whatsappHint: "Cara tercepat menghubungi tim kami",
+  emailHint: "Untuk pertanyaan tertulis atau terperinci",
+  retryAfter: "Anda dapat mencoba lagi dalam {seconds} detik.",
 };

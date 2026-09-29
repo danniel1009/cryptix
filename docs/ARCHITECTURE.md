@@ -59,7 +59,7 @@ src/
 
 ### Config
 - `siteConfig` (`@/config/site`): `name`, `url`, `whatsappNumber` (digits only, may be ""), `contactEmail`, `defaultLocale`, `copyrightYear`, `nav` (NAV_ITEMS: `{id, href}`; label = `t.nav[id]`).
-- `@/config/exchange`: `CurrencyCode`, `CURRENCIES`, `PairId`, `ExchangePair {id, from, to, quoteBase}`, `SUPPORTED_PAIRS`, `DEFAULT_PAIR_ID`, `DEFAULT_EXCHANGE_SPREAD`, `AMOUNT_LIMITS`, `MARKET_DISPLAY_PAIRS`, helpers `getPairById`, `isPairId`, `isCurrencyCode`, `findPair`, `getSendableCurrencies`, `getReceivableCurrencies`, `pairLabel`.
+- `@/config/exchange`: `CurrencyCode`, `CURRENCIES`, `PairId`, `ExchangePair {id, from, to, quoteBase, featured}`, `SUPPORTED_PAIRS` (8: USDT→BTC, SOL→BTC, ETH→BTC, USDT→IDR featured; BTC→USDT, BTC→SOL, BTC→ETH, IDR→USDT reverse), `FEATURED_PAIRS`, `findReversePair`, `DEFAULT_PAIR_ID`, `DEFAULT_EXCHANGE_SPREAD`, `AMOUNT_LIMITS`, `MARKET_DISPLAY_PAIRS`, helpers `getPairById`, `isPairId`, `isCurrencyCode`, `findPair`, `getSendableCurrencies`, `getReceivableCurrencies`, `pairLabel`.
 - `@/config/market`: timing constants.
 - `@/config/server` (server-only): `serverConfig.exchange.spread`, `serverConfig.market.*`, `serverConfig.leads.*`, `serverConfig.security.*`.
 

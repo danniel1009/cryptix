@@ -5,7 +5,8 @@ import { disclaimer } from "./disclaimer";
  * placeholders, the consent checkbox, submit/cancel, and the success state.
  * Placeholders: `{time}` formatted time of the indicative rate,
  * `{reference}` the "CX-XXXXXX" reference from `/api/exchange-request`,
- * `{n}` / `{total}` for the optional step indicator.
+ * `{n}` / `{total}` for the optional step indicator,
+ * `{min}` / `{max}` formatted amount limits of the sent currency.
  *
  * Consumed by: ExchangeRequestModal (opened via `useExchangeRequest()`).
  */
@@ -43,4 +44,22 @@ export const exchangeRequest = {
   prefillNote: "Pre-filled from the rate checker — you can change any value.",
   stepLabel: "Step {n} of {total}",
   noAccountNote: "No account needed. Nothing is executed automatically.",
+  /** Tiny mono group labels above the two field groups. */
+  sectionContact: "Your contact details",
+  sectionExchange: "Exchange details",
+  /** Under the amount field. `{min}` / `{max}` are formatted amounts with currency. */
+  amountHint: "Minimum {min}, maximum {max}.",
+  /** Shown once the visitor has typed into the estimate field themselves. */
+  estimateEditedNote: "Edited manually. Live updates are paused for this field.",
+  /** Ghost button that hands the estimate back to the live rate. */
+  recalculate: "Recalculate",
+  /** Estimate hint while market data is unavailable (the field stays editable). */
+  estimateUnavailableHint:
+    "The live rate is unavailable right now. You may enter the amount you expect; our team will confirm it.",
+  /** Connection notes shown next to the rate while fresh data is still displayed. */
+  marketNote: {
+    reconnecting: "Reconnecting to the live market feed. Estimates use the latest available data.",
+    polling: "Live stream unavailable. Prices refresh periodically.",
+    offline: "You appear to be offline. Estimates use the last received data.",
+  },
 };

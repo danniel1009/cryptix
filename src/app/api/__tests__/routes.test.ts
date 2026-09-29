@@ -267,7 +267,7 @@ describe("POST /api/exchange-request", () => {
 
   it("returns 400 for an unsupported pair, a missing consent and an out-of-range amount", async () => {
     const res = await exchangeRoute.POST(
-      post("/api/exchange-request", { ...validExchange(), pairId: "BTC_USDT", consent: false }),
+      post("/api/exchange-request", { ...validExchange(), pairId: "ETH_SOL", consent: false }),
     );
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({

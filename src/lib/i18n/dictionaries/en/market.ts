@@ -16,12 +16,15 @@ export const market = {
   reconnecting: "RECONNECTING",
   unavailable: "UNAVAILABLE",
   stale: "STALE",
+  /** Shown while the first snapshot is still loading (rendered uppercase by the indicator). */
+  connecting: "Connecting",
   columns: {
     pair: "Pair",
     price: "Price",
     change24h: "24h change",
     updated: "Updated",
     status: "Status",
+    source: "Source",
   },
   lastUpdated: "Last updated: {time}",
   updatedAgo: "Last updated {time}",

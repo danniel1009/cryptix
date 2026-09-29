@@ -73,7 +73,19 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
   },
 };
 
-export const PAIR_IDS = ["USDT_BTC", "SOL_BTC", "ETH_BTC", "USDT_IDR"] as const;
+export const PAIR_IDS = [
+  // Featured, customer-facing pairs (listed first everywhere, used as defaults).
+  "USDT_BTC",
+  "SOL_BTC",
+  "ETH_BTC",
+  "USDT_IDR",
+  // Reverse directions: allowed (they make the converter's swap button meaningful),
+  // but not promoted in the "Supported exchange pairs" section.
+  "BTC_USDT",
+  "BTC_SOL",
+  "BTC_ETH",
+  "IDR_USDT",
+] as const;
 export type PairId = (typeof PAIR_IDS)[number];
 
 export interface ExchangePair {
@@ -85,18 +97,30 @@ export interface ExchangePair {
   /**
    * The currency used as the "1 unit" side when a rate is displayed, following
    * market convention: "1 BTC = 105,000 USDT", "1 ETH = 0.0298 BTC",
-   * "1 SOL = 0.0017 BTC", "1 USDT = Rp16,485".
+   * "1 SOL = 0.0017 BTC", "1 USDT = Rp16,485" — the same for both directions.
    */
   quoteBase: CurrencyCode;
+  /** Featured = one of the four customer-facing pairs shown in marketing sections. */
+  featured: boolean;
 }
 
-/** The ONLY exchange pairs offered. Nothing else is selectable anywhere. */
+/**
+ * The ONLY exchange pairs offered. Nothing else is selectable anywhere.
+ * Featured pairs come first; the reverse directions follow.
+ */
 export const SUPPORTED_PAIRS: readonly ExchangePair[] = [
-  { id: "USDT_BTC", from: "USDT", to: "BTC", quoteBase: "BTC" },
-  { id: "SOL_BTC", from: "SOL", to: "BTC", quoteBase: "SOL" },
-  { id: "ETH_BTC", from: "ETH", to: "BTC", quoteBase: "ETH" },
-  { id: "USDT_IDR", from: "USDT", to: "IDR", quoteBase: "USDT" },
+  { id: "USDT_BTC", from: "USDT", to: "BTC", quoteBase: "BTC", featured: true },
+  { id: "SOL_BTC", from: "SOL", to: "BTC", quoteBase: "SOL", featured: true },
+  { id: "ETH_BTC", from: "ETH", to: "BTC", quoteBase: "ETH", featured: true },
+  { id: "USDT_IDR", from: "USDT", to: "IDR", quoteBase: "USDT", featured: true },
+  { id: "BTC_USDT", from: "BTC", to: "USDT", quoteBase: "BTC", featured: false },
+  { id: "BTC_SOL", from: "BTC", to: "SOL", quoteBase: "SOL", featured: false },
+  { id: "BTC_ETH", from: "BTC", to: "ETH", quoteBase: "ETH", featured: false },
+  { id: "IDR_USDT", from: "IDR", to: "USDT", quoteBase: "USDT", featured: false },
 ] as const;
+
+/** The four customer-facing pairs promoted in marketing sections. */
+export const FEATURED_PAIRS: readonly ExchangePair[] = SUPPORTED_PAIRS.filter((p) => p.featured);
 
 export const DEFAULT_PAIR_ID: PairId = "USDT_BTC";
 
@@ -136,14 +160,19 @@ export function findPair(from: CurrencyCode, to: CurrencyCode): ExchangePair | u
   return SUPPORTED_PAIRS.find((p) => p.from === from && p.to === to);
 }
 
-/** Currencies that can be SENT (appear in the "You send" selector). */
+/** Currencies that can be SENT (appear in the "From" selector), featured pairs first. */
 export function getSendableCurrencies(): CurrencyCode[] {
   return Array.from(new Set(SUPPORTED_PAIRS.map((p) => p.from)));
 }
 
-/** Currencies that can be RECEIVED for a given sent currency. */
+/** Currencies that can be RECEIVED for a given sent currency, featured pairs first. */
 export function getReceivableCurrencies(from: CurrencyCode): CurrencyCode[] {
   return SUPPORTED_PAIRS.filter((p) => p.from === from).map((p) => p.to);
+}
+
+/** The opposite direction of a pair, if offered (used by the converter's swap button). */
+export function findReversePair(pair: ExchangePair): ExchangePair | undefined {
+  return findPair(pair.to, pair.from);
 }
 
 /** Human label such as "USDT → BTC". */

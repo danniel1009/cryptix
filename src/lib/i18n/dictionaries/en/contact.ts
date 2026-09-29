@@ -2,6 +2,8 @@
  * `t.contact` — Contact our team (section `#contact`): form field labels and
  * placeholders, the success state, and the direct-contact panel.
  * `{reference}` is the "CX-XXXXXX" reference returned by `/api/contact`.
+ * `{seconds}` in `retryAfter` is the formatted `retryAfterSeconds` of a
+ * rate-limited response.
  *
  * Consumed by: Contact section (form + success + direct contact card).
  */
@@ -31,4 +33,14 @@ export const contact = {
   whatsappLabel: "WhatsApp",
   emailLabel: "Email",
   responseTime: "We usually reply within business hours.",
+  /** Title of the form card. */
+  formTitle: "Send us a message",
+  /** Small note under the form title. */
+  formNote: "All fields are required. Our team replies through WhatsApp or email.",
+  /** Secondary line of the WhatsApp channel row. */
+  whatsappHint: "Fastest way to reach the team",
+  /** Secondary line of the email channel row. */
+  emailHint: "For detailed or written enquiries",
+  /** Shown under the rate-limit error. `{seconds}` — formatted number of seconds. */
+  retryAfter: "You can try again in {seconds} seconds.",
 };
