@@ -1,16 +1,18 @@
 "use client";
 
-import { CircleAlert, Info, RefreshCw, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { CircleAlert, Info, RefreshCw } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { EXCHANGE_REQUEST_LIMITS } from "@/lib/validation/schemas";
+import { ExchangeRequestSummary } from "./ExchangeRequestSummary";
 import { PairSelect } from "./PairSelect";
 import { amountLimitsFor, type ExchangeRequestFieldName, type ExchangeRequestFormApi } from "./useExchangeRequestForm";
 
@@ -20,9 +22,11 @@ export interface ExchangeRequestFormProps {
   form: ExchangeRequestFormApi;
   /** The <form> element (owned by the dialog, shared with the hook for error focus). */
   formRef?: RefObject<HTMLFormElement | null>;
-  /** Receives the first text field so the modal can move focus there on open. */
+  /** Receives the first contact field so the modal can move focus there on open. */
   firstFieldRef?: RefObject<HTMLInputElement | null>;
 }
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** Tiny mono group label (uppercase by CSS only — the dictionary stays sentence case). */
 function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
@@ -44,14 +48,19 @@ function OptionalMark({ text }: { text: string }) {
 }
 
 /**
- * The request form body. Two-column field grid on sm+, single column on
- * mobile; the footer actions are rendered by the modal so they stay sticky
+ * The request form body, top to bottom: the summary header (what is being
+ * requested + indicative rate), the compact editable exchange details (pair /
+ * amount / estimate — collapsed behind "Edit details" when the modal was
+ * opened with a prefill), the customer information, the disclaimer and the
+ * consent. The footer actions are rendered by the modal so they stay sticky
  * inside the sheet. Nothing here executes anything — it collects a request.
  */
 export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: ExchangeRequestFormProps) {
-  const { t, formatAmount, formatPrice, formatSpread, formatTime, formatRelativeTime } = useI18n();
+  const { t, formatAmount, formatTime } = useI18n();
+  const reduced = useReducedMotionSafe();
   const uid = useId();
   const ids = {
+    summary: `${uid}-summary`,
     contact: `${uid}-contact`,
     exchange: `${uid}-exchange`,
     estimateNote: `${uid}-estimate-note`,
@@ -59,21 +68,8 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
   };
   const alertRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    values,
-    errors,
-    formError,
-    hasPrefill,
-    pair,
-    rate,
-    spread,
-    marketStatus,
-    connection,
-    lastUpdatedAt,
-    estimateText,
-    estimateMode,
-    canCompute,
-  } = form;
+  const { values, errors, formError, pair, rate, marketStatus, lastUpdatedAt, estimateText, estimateMode, canCompute, detailsOpen } =
+    form;
   const fields = t.exchangeRequest.fields;
   const limits = amountLimitsFor(pair);
 
@@ -92,7 +88,6 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
 
   const rateTime = lastUpdatedAt ?? (rate ? new Date(rate.updatedAt) : null);
   const isStale = marketStatus === "stale";
-  const showRate = canCompute && rate !== undefined;
 
   /* Under the estimate field: what the number is based on right now. */
   let estimateNote: ReactNode;
@@ -122,21 +117,6 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
     estimateNote = t.exchangeRequest.estimateUnavailableHint;
   }
 
-  /* Market state notes: shown next to the rate; rare changes, so a polite live region. */
-  const marketNotes: { key: string; text: string; tone: "warning" | "muted" }[] = [];
-  if (marketStatus === "unavailable") {
-    marketNotes.push({ key: "unavailable", text: t.common.marketUnavailable, tone: "warning" });
-  } else if (isStale && lastUpdatedAt) {
-    marketNotes.push({
-      key: "stale",
-      text: interpolate(t.common.updatedAgo, { time: formatRelativeTime(lastUpdatedAt) }),
-      tone: "warning",
-    });
-  }
-  if (connection === "reconnecting" || connection === "polling" || connection === "offline") {
-    marketNotes.push({ key: connection, text: t.exchangeRequest.marketNote[connection], tone: "muted" });
-  }
-
   return (
     <form
       id={id}
@@ -146,17 +126,73 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
       autoComplete="on"
       className="relative flex flex-col gap-8"
     >
-      {hasPrefill ? (
-        <p className="flex w-fit max-w-full items-center gap-2 rounded-full border border-accent/20 bg-accent-soft/40 px-3.5 py-2 text-xs text-muted">
-          <Sparkles aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={1.75} />
-          <span>{t.exchangeRequest.prefillNote}</span>
-        </p>
+      {/* ─────────────── Summary: what is being requested ─────────────── */}
+      <ExchangeRequestSummary form={form} labelId={ids.summary} />
+
+      {/* ─────────────── Exchange details (compact, editable) ─────────────── */}
+      {detailsOpen ? (
+        <motion.div
+          role="group"
+          aria-labelledby={ids.exchange}
+          initial={{ opacity: 0, y: reduced ? 0 : -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduced ? 0 : 0.3, ease: EASE }}
+          className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-2/40 p-4 sm:p-5"
+        >
+          <GroupLabel id={ids.exchange}>{t.exchangeRequest.sectionExchange}</GroupLabel>
+          <PairSelect
+            name="pairId"
+            label={fields.pair.label}
+            required
+            value={values.pairId}
+            onValueChange={form.setPairId}
+            error={errorText("pairId")}
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              name="amount"
+              inputMode="decimal"
+              mono
+              label={fields.amount.label}
+              placeholder={fields.amount.placeholder}
+              autoComplete="off"
+              required
+              value={values.amountText}
+              onChange={(event) => form.setAmountText(event.target.value)}
+              rightAddon={pair.from}
+              error={errorText("amount")}
+              hint={interpolate(t.exchangeRequest.amountHint, {
+                min: formatAmount(limits.min, pair.from, { compact: true }),
+                max: formatAmount(limits.max, pair.from, { compact: true }),
+              })}
+            />
+            <div>
+              <Input
+                name="estimatedReceive"
+                inputMode="decimal"
+                mono
+                label={fields.estimatedReceive.label}
+                placeholder={fields.estimatedReceive.placeholder}
+                autoComplete="off"
+                value={estimateText}
+                onChange={(event) => form.setEstimateText(event.target.value)}
+                rightAddon={pair.to}
+                error={errorText("estimatedReceive")}
+                aria-describedby={ids.estimateNote}
+                className={cn(isStale && estimateMode === "live" && "text-muted")}
+              />
+              <div id={ids.estimateNote} className="mt-2 text-xs leading-relaxed text-faint">
+                {estimateNote}
+              </div>
+            </div>
+          </div>
+        </motion.div>
       ) : null}
 
-      {/* ─────────────── Contact details ─────────────── */}
+      {/* ─────────────── Customer information ─────────────── */}
       <div role="group" aria-labelledby={ids.contact} className="flex flex-col gap-4">
         <GroupLabel id={ids.contact}>{t.exchangeRequest.sectionContact}</GroupLabel>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             ref={firstFieldRef}
             name="fullName"
@@ -195,114 +231,25 @@ export function ExchangeRequestForm({ id, form, formRef, firstFieldRef }: Exchan
             error={errorText("email")}
             wrapperClassName="sm:col-span-2"
           />
-        </div>
-      </div>
-
-      {/* ─────────────── Exchange details ─────────────── */}
-      <div role="group" aria-labelledby={ids.exchange} className="flex flex-col gap-4">
-        <GroupLabel id={ids.exchange}>{t.exchangeRequest.sectionExchange}</GroupLabel>
-        <PairSelect
-          name="pairId"
-          label={fields.pair.label}
-          required
-          value={values.pairId}
-          onValueChange={form.setPairId}
-          error={errorText("pairId")}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            name="amount"
-            inputMode="decimal"
-            mono
-            label={fields.amount.label}
-            placeholder={fields.amount.placeholder}
-            autoComplete="off"
-            required
-            value={values.amountText}
-            onChange={(event) => form.setAmountText(event.target.value)}
-            rightAddon={pair.from}
-            error={errorText("amount")}
-            hint={interpolate(t.exchangeRequest.amountHint, {
-              min: formatAmount(limits.min, pair.from, { compact: true }),
-              max: formatAmount(limits.max, pair.from, { compact: true }),
-            })}
+          <Textarea
+            name="message"
+            rows={3}
+            label={
+              <>
+                {fields.message.label}
+                <OptionalMark text={t.common.optional} />
+              </>
+            }
+            placeholder={fields.message.placeholder}
+            maxLength={EXCHANGE_REQUEST_LIMITS.message.max}
+            value={values.message}
+            onChange={(event) => form.setText("message", event.target.value)}
+            error={errorText("message")}
+            className="min-h-[96px]"
+            wrapperClassName="sm:col-span-2"
           />
-          <div>
-            <Input
-              name="estimatedReceive"
-              inputMode="decimal"
-              mono
-              label={fields.estimatedReceive.label}
-              placeholder={fields.estimatedReceive.placeholder}
-              autoComplete="off"
-              value={estimateText}
-              onChange={(event) => form.setEstimateText(event.target.value)}
-              rightAddon={pair.to}
-              error={errorText("estimatedReceive")}
-              aria-describedby={ids.estimateNote}
-              className={cn(isStale && estimateMode === "live" && "text-muted")}
-            />
-            <div id={ids.estimateNote} className="mt-2 text-xs leading-relaxed text-faint">
-              {estimateNote}
-            </div>
-          </div>
-        </div>
-
-        {showRate ? (
-          <div
-            className={cn(
-              "flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-surface-2/60 px-4 py-3",
-              isStale && "opacity-70",
-            )}
-          >
-            <span className="text-xs text-muted">{t.common.ourRate}</span>
-            <span className="font-mono nums text-sm text-fg">
-              {formatAmount(1, rate.quoteBase, { compact: true })} = {formatPrice(rate.ourPriceDisplay, rate.quoteCurrency)}
-            </span>
-            <Badge size="sm" className="ml-auto">
-              {interpolate(t.common.spreadBadge, { spread: formatSpread(spread) })}
-            </Badge>
-          </div>
-        ) : null}
-
-        <div aria-live="polite" className={cn("flex flex-col gap-1.5", marketNotes.length === 0 && "hidden")}>
-          {marketNotes.map((note) => (
-            <p
-              key={note.key}
-              className={cn(
-                "flex items-start gap-2 text-xs leading-relaxed",
-                note.tone === "warning" ? "text-warning" : "text-muted",
-              )}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full",
-                  note.tone === "warning" ? "bg-warning" : "border border-muted",
-                )}
-              />
-              {note.text}
-            </p>
-          ))}
         </div>
       </div>
-
-      <Textarea
-        name="message"
-        rows={3}
-        label={
-          <>
-            {fields.message.label}
-            <OptionalMark text={t.common.optional} />
-          </>
-        }
-        placeholder={fields.message.placeholder}
-        maxLength={EXCHANGE_REQUEST_LIMITS.message.max}
-        value={values.message}
-        onChange={(event) => form.setText("message", event.target.value)}
-        error={errorText("message")}
-        className="min-h-[96px]"
-      />
 
       {/* ─────────────── Disclaimer + consent ─────────────── */}
       <div className="flex flex-col gap-4">

@@ -35,7 +35,7 @@ export const exchangeRequest: typeof en = {
   },
   prefillNote: "Terisi dari cek kurs — Anda dapat mengubah nilai apa pun.",
   stepLabel: "Langkah {n} dari {total}",
-  noAccountNote: "Tidak perlu akun. Tidak ada transaksi yang dieksekusi tanpa konfirmasi tim kami.",
+  noAccountNote: "Tidak perlu akun. Tim kami mengonfirmasi setiap permintaan langsung dengan Anda.",
   sectionContact: "Data kontak Anda",
   sectionExchange: "Detail exchange",
   amountHint: "Minimum {min}, maksimum {max}.",
@@ -48,4 +48,12 @@ export const exchangeRequest: typeof en = {
     polling: "Streaming live tidak tersedia. Harga diperbarui secara berkala.",
     offline: "Anda tampaknya sedang offline. Estimasi menggunakan data terakhir yang diterima.",
   },
+  summary: {
+    title: "Anda mengajukan",
+    rate: "Kurs indikatif",
+    marketNote: "Pasar {market} · kurs kami sudah termasuk spread {spread}",
+    capturedAt: "Kurs sesuai tampilan pukul {time}",
+  },
+  editDetails: "Ubah detail",
+  chatWhatsApp: "Chat langsung via WhatsApp",
 };

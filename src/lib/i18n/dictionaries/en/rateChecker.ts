@@ -6,7 +6,7 @@ import { disclaimer } from "./disclaimer";
  * `{sources}` comma-joined provider names, `{currency}` currency code,
  * `{amount}` formatted amount with currency.
  *
- * Consumed by: RateChecker section (and its inner rate card / amount input).
+ * Consumed by: RateChecker section (converter card: panels, swap button, rate rows, CTA).
  * Only `spreadBadge` and `ourRateFormula` (tiny mono labels) are uppercase.
  */
 export const rateChecker = {
@@ -42,4 +42,21 @@ export const rateChecker = {
   sourceLabel: "Source",
   rateBasis: "Rates refresh automatically as market data updates.",
   quickAmounts: "Quick amounts",
+  /** Accessible names of the two currency dropdowns. */
+  sendCurrencyLabel: "Currency you send",
+  receiveCurrencyLabel: "Currency you receive",
+  /** Tiny line under the estimate. `{amount}` — formatted amount with currency ("1,000.00 USDT"). */
+  forAmount: "for {amount}",
+  /** Meta line. `{time}` — formatted clock time. */
+  updatedAt: "Updated {time}",
+  estimateUnavailable: "Estimate unavailable",
+  /** Converter card panel labels (small, muted, top-left of each panel). */
+  from: "From",
+  to: "To",
+  /** Accessible name of the circular swap button between the panels. */
+  swap: "Swap currencies",
+  /** Tooltip on the "Our rate" row. `{spread}` — formatted spread such as "5%". */
+  spreadExplainer: "Our rate applies a {spread} spread on the asset you receive.",
+  /** Accessible name of the small info button that opens `spreadExplainer`. */
+  spreadInfoLabel: "How our rate is calculated",
 };

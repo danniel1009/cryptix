@@ -7,7 +7,12 @@ import { Modal } from "@/components/ui/Modal";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
 import { useI18n } from "@/lib/i18n/provider";
-import { buildExchangeInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import {
+  buildExchangeInquiryMessage,
+  buildGeneralInquiryMessage,
+  buildWhatsAppUrl,
+  isWhatsAppConfigured,
+} from "@/lib/whatsapp";
 import { useExchangeRequest, type ExchangeRequestPrefill } from "@/providers/ExchangeRequestProvider";
 import { ExchangeRequestForm } from "./ExchangeRequestForm";
 import { ExchangeRequestSuccess } from "./ExchangeRequestSuccess";
@@ -50,10 +55,12 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
   // Autofocusing a text field on a phone pops the keyboard over the sheet; desktop only.
   const isDesktop = useMediaQuery("(min-width: 640px)");
   const scrollTo = useSmoothScrollTo();
-  const { success, submitting } = form;
+  const { success, submitting, values, amount, estimate } = form;
 
   const whatsappConfigured = isWhatsAppConfigured();
-  const whatsappHref = success
+
+  /** Success: the same request, now with its reference. */
+  const successWhatsappHref = success
     ? buildWhatsAppUrl(
         buildExchangeInquiryMessage({
           locale,
@@ -65,7 +72,21 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
       )
     : "#contact";
 
-  /** Without a configured number the CTA falls back to the contact section. */
+  /**
+   * Form: the CURRENT pair / amount / estimate, so the chat starts with what the
+   * visitor is looking at. Without a usable amount the message is the general
+   * inquiry (an "Amount: —" line would only confuse the team).
+   */
+  const hasAmount = Number.isFinite(amount) && amount > 0;
+  const formWhatsappHref = whatsappConfigured
+    ? buildWhatsAppUrl(
+        hasAmount
+          ? buildExchangeInquiryMessage({ locale, pairId: values.pairId, amount, estimatedReceive: estimate })
+          : buildGeneralInquiryMessage(locale),
+      )
+    : "#contact";
+
+  /** Without a configured number the success CTA falls back to the contact section. */
   const onChatClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (whatsappConfigured) return;
     event.preventDefault();
@@ -79,7 +100,7 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
         {t.exchangeRequest.success.close}
       </Button>
       <Button
-        href={whatsappHref}
+        href={successWhatsappHref}
         target={whatsappConfigured ? "_blank" : undefined}
         rel={whatsappConfigured ? "noopener noreferrer" : undefined}
         onClick={onChatClick}
@@ -90,13 +111,27 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
       </Button>
     </div>
   ) : (
-    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="w-full sm:w-auto">
         {t.exchangeRequest.cancel}
       </Button>
-      <Button type="submit" form={formId} loading={submitting} className="w-full sm:w-auto">
-        {submitting ? t.form.submitting : t.exchangeRequest.submit}
-      </Button>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+        {whatsappConfigured ? (
+          <Button
+            variant="whatsapp"
+            href={formWhatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            leftIcon={<MessageCircle />}
+            className="w-full sm:w-auto"
+          >
+            {t.exchangeRequest.chatWhatsApp}
+          </Button>
+        ) : null}
+        <Button type="submit" form={formId} loading={submitting} className="w-full sm:w-auto">
+          {submitting ? t.form.submitting : t.exchangeRequest.submit}
+        </Button>
+      </div>
     </div>
   );
 

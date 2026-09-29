@@ -7,14 +7,16 @@ import {
   DEFAULT_PAIR_ID,
   SUPPORTED_PAIRS,
   getPairById,
+  isCurrencyCode,
   isPairId,
+  type CurrencyCode,
   type ExchangePair,
   type PairId,
 } from "@/config/exchange";
 import { submitExchangeRequest, type SubmitErrorCode } from "@/lib/api/client";
 import { formatAmount, parseAmountInput } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/provider";
-import type { Locale } from "@/lib/i18n/types";
+import { INTL_LOCALES, type Locale } from "@/lib/i18n/types";
 import { calculateReceive } from "@/lib/market/rates";
 import type { IndicativeRate, MarketStatus } from "@/lib/market/types";
 import {
@@ -37,6 +39,15 @@ import { useMarket, type MarketConnection } from "@/providers/MarketProvider";
  * `recalculate()` hands it back to the live rate. When market data is
  * unavailable nothing is computed; the field keeps whatever it holds (the
  * prefill or the visitor's own number) and the team confirms the final rate.
+ *
+ * Summary rate (the header "Indicative rate 1 BTC = …"): the LIVE rate for
+ * the current pair whenever the market can quote it; otherwise the rate the
+ * rate checker showed when the visitor clicked "Request exchange"
+ * (`prefill.rateSnapshot`, labelled with its capture time); otherwise nothing.
+ *
+ * Details group: opened WITH a prefill the pair / amount / estimate fields are
+ * collapsed behind "Edit details"; opened without one they are expanded. Any
+ * validation error on one of those fields (client or server) expands them.
  */
 
 /** Text fields the visitor types into (amount/estimate are kept as typed text). */
@@ -62,8 +73,16 @@ export interface ExchangeRequestFormValues {
   pairId: PairId;
   /** As typed, in either locale convention ("1,000.50" / "1.000,50"). */
   amountText: string;
+  /**
+   * The exact number `amountText` was formatted from (prefill); null once the
+   * visitor edits the text, which is then parsed instead. Keeps "1,000,000"
+   * (IDR) exact — grouped integers are ambiguous for a locale-agnostic parser.
+   */
+  amountValue: number | null;
   /** Only meaningful while `estimateEdited` (or as the prefill seed before the market answers). */
   estimateText: string;
+  /** Same role as `amountValue`, for the prefilled estimate. */
+  estimateValue: number | null;
   estimateEdited: boolean;
   message: string;
   consent: boolean;
@@ -86,6 +105,26 @@ export interface ExchangeRequestSuccess {
   estimatedReceive: number | null;
 }
 
+/**
+ * The rate quoted in the summary header, in the pair's display direction
+ * ("1 quoteBase = ourPriceDisplay quoteCurrency"). Never a quote or an order —
+ * an indication the team confirms.
+ */
+export interface SummaryRate {
+  /** `live` = current market feed; `snapshot` = the rate shown in the rate checker when the modal was opened. */
+  source: "live" | "snapshot";
+  quoteBase: CurrencyCode;
+  quoteCurrency: CurrencyCode;
+  marketPriceDisplay: number;
+  ourPriceDisplay: number;
+  spread: number;
+  /**
+   * ISO time at which the rate checker showed exactly this rate; null when the
+   * displayed number no longer matches what the visitor saw (the feed moved).
+   */
+  capturedAt: string | null;
+}
+
 export interface UseExchangeRequestFormOptions {
   prefill: ExchangeRequestPrefill | null;
   /** The <form> element, so the first invalid control can receive focus after a failed submit. */
@@ -98,6 +137,7 @@ export interface ExchangeRequestFormApi {
   formError: ExchangeRequestFormErrorCode | null;
   submitting: boolean;
   success: ExchangeRequestSuccess | null;
+  /** True while the form still holds values carried over from the rate checker. */
   hasPrefill: boolean;
   pair: ExchangePair;
   rate: IndicativeRate | undefined;
@@ -110,9 +150,17 @@ export interface ExchangeRequestFormApi {
   amount: number;
   /** What the estimate input shows right now. */
   estimateText: string;
+  /** `estimateText` as a positive number, or null when empty / not a number. */
+  estimate: number | null;
   estimateMode: EstimateMode;
   /** True when a live estimate can be produced for the current pair. */
   canCompute: boolean;
+  /** Rate for the summary header (live, else the prefill snapshot), null when neither exists. */
+  summaryRate: SummaryRate | null;
+  /** Whether the pair / amount / estimate group is expanded. */
+  detailsOpen: boolean;
+  /** Expand the pair / amount / estimate group ("Edit details"). One-way. */
+  openDetails: () => void;
   setText: (field: "fullName" | "whatsapp" | "email" | "message", value: string) => void;
   setPairId: (pairId: string) => void;
   setAmountText: (value: string) => void;
@@ -137,6 +185,9 @@ const FIELD_NAMES: readonly ExchangeRequestFieldName[] = [
   "consent",
 ];
 
+/** Fields rendered inside the collapsible "Exchange details" group. */
+export const DETAIL_FIELD_NAMES: readonly ExchangeRequestFieldName[] = ["pairId", "amount", "estimatedReceive"];
+
 function isFieldName(value: string): value is ExchangeRequestFieldName {
   return (FIELD_NAMES as readonly string[]).includes(value);
 }
@@ -152,6 +203,58 @@ export function pickFieldErrors(
   return picked;
 }
 
+/** True when any error belongs to the collapsible details group. */
+export function hasDetailErrors(errors: ExchangeRequestFieldErrors): boolean {
+  return DETAIL_FIELD_NAMES.some((field) => errors[field] !== undefined);
+}
+
+function isPositiveNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+/**
+ * Parse text that THIS form produced with `formatAmount(locale, …)` back into
+ * a number, using the locale's own group / decimal separators. Exact for our
+ * own output ("15,700,000" → 15 700 000, "0,00952381" → 0.00952381); never used
+ * for what the visitor typed (that may follow either convention and goes
+ * through `parseAmountInput`).
+ */
+function parseFormattedAmount(locale: Locale, text: string): number {
+  const parts = new Intl.NumberFormat(INTL_LOCALES[locale]).formatToParts(1234.5);
+  const group = parts.find((p) => p.type === "group")?.value ?? ",";
+  const decimal = parts.find((p) => p.type === "decimal")?.value ?? ".";
+  const normalized = text.trim().split(group).join("").replace(decimal, ".");
+  return normalized.length > 0 ? Number(normalized) : NaN;
+}
+
+/**
+ * The prefill's rate snapshot, if it still describes `pair`: it was captured
+ * for the prefilled pair, so a pair change makes it meaningless. Malformed
+ * snapshots (the provider type is loose) are ignored rather than displayed.
+ */
+export function snapshotRateFor(prefill: ExchangeRequestPrefill | null, pair: ExchangePair): SummaryRate | null {
+  const snap = prefill?.rateSnapshot;
+  if (!snap || prefill.pairId !== pair.id) return null;
+  if (!isPositiveNumber(snap.marketPriceDisplay) || !isPositiveNumber(snap.ourPriceDisplay)) return null;
+  if (!isCurrencyCode(snap.quoteBase) || !isCurrencyCode(snap.quoteCurrency)) return null;
+  const currencies = new Set<CurrencyCode>([pair.from, pair.to]);
+  if (!currencies.has(snap.quoteBase) || !currencies.has(snap.quoteCurrency) || snap.quoteBase === snap.quoteCurrency) {
+    return null;
+  }
+  const spread = Number.isFinite(snap.spread) && snap.spread >= 0 && snap.spread < 1 ? snap.spread : DEFAULT_EXCHANGE_SPREAD;
+  const capturedAt =
+    typeof snap.capturedAt === "string" && !Number.isNaN(Date.parse(snap.capturedAt)) ? snap.capturedAt : null;
+  return {
+    source: "snapshot",
+    quoteBase: snap.quoteBase,
+    quoteCurrency: snap.quoteCurrency,
+    marketPriceDisplay: snap.marketPriceDisplay,
+    ourPriceDisplay: snap.ourPriceDisplay,
+    spread,
+    capturedAt,
+  };
+}
+
 function initialValues(
   prefill: ExchangeRequestPrefill | null,
   locale: Locale,
@@ -159,21 +262,17 @@ function initialValues(
 ): ExchangeRequestFormValues {
   const pairId = prefill && isPairId(prefill.pairId) ? prefill.pairId : DEFAULT_PAIR_ID;
   const pair = getPairById(pairId) ?? SUPPORTED_PAIRS[0];
-  const amount = prefill?.amount;
-  const estimate = prefill?.estimatedReceive;
+  const amount = isPositiveNumber(prefill?.amount) ? prefill.amount : null;
+  const estimate = isPositiveNumber(prefill?.estimatedReceive) ? prefill.estimatedReceive : null;
   return {
     fullName: keep?.fullName ?? "",
     whatsapp: keep?.whatsapp ?? "",
     email: keep?.email ?? "",
     pairId,
-    amountText:
-      typeof amount === "number" && Number.isFinite(amount) && amount > 0
-        ? formatAmount(locale, amount, pair.from, { withSymbol: false })
-        : "",
-    estimateText:
-      typeof estimate === "number" && Number.isFinite(estimate) && estimate > 0
-        ? formatAmount(locale, estimate, pair.to, { withSymbol: false })
-        : "",
+    amountText: amount !== null ? formatAmount(locale, amount, pair.from, { withSymbol: false }) : "",
+    amountValue: amount,
+    estimateText: estimate !== null ? formatAmount(locale, estimate, pair.to, { withSymbol: false }) : "",
+    estimateValue: estimate,
     estimateEdited: false,
     message: "",
     consent: false,
@@ -197,6 +296,9 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
   const [formError, setFormError] = useState<ExchangeRequestFormErrorCode | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<ExchangeRequestSuccess | null>(null);
+  /** Cleared by "Submit another request", which resets the exchange details. */
+  const [hasPrefill, setHasPrefill] = useState(prefill !== null);
+  const [detailsOpen, setDetailsOpen] = useState(prefill === null);
 
   /** Render timestamp for the anti-spam `ts` field (taken on mount, not during render). */
   const tsRef = useRef<number | null>(null);
@@ -220,7 +322,7 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
 
   const pair = getPairById(values.pairId) ?? SUPPORTED_PAIRS[0];
   const rate = getRate(pair.id);
-  const amount = parseAmountInput(values.amountText);
+  const amount = values.amountValue ?? parseAmountInput(values.amountText);
   const canCompute = marketStatus !== "unavailable" && rate !== undefined;
 
   const computed = canCompute && rate ? calculateReceive(rate, amount) : 0;
@@ -232,8 +334,47 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
         ? formatAmount(locale, computed, pair.to, { withSymbol: false })
         : ""
       : values.estimateText;
+  /**
+   * The estimate as a number, at the precision the visitor sees: null when the
+   * field is empty, NaN when the visitor typed something that is not a number
+   * (validation reports it). Live text is our own formatting, so it is read
+   * back exactly; a prefilled text keeps its exact source number.
+   */
+  let estimateNumber: number | null;
+  if (estimateMode === "live") {
+    if (computed > 0) {
+      const shown = parseFormattedAmount(locale, estimateText);
+      estimateNumber = Number.isFinite(shown) && shown > 0 ? shown : computed;
+    } else {
+      estimateNumber = null;
+    }
+  } else if (values.estimateText.trim().length === 0) {
+    estimateNumber = null;
+  } else {
+    estimateNumber = values.estimateValue ?? parseAmountInput(values.estimateText);
+  }
+  const estimate = estimateNumber !== null && Number.isFinite(estimateNumber) && estimateNumber > 0 ? estimateNumber : null;
+
+  const snapshotRate = hasPrefill ? snapshotRateFor(prefill, pair) : null;
+  let summaryRate: SummaryRate | null = null;
+  if (canCompute && rate) {
+    summaryRate = {
+      source: "live",
+      quoteBase: rate.quoteBase,
+      quoteCurrency: rate.quoteCurrency,
+      marketPriceDisplay: rate.marketPriceDisplay,
+      ourPriceDisplay: rate.ourPriceDisplay,
+      spread: rate.spread,
+      // "Rate as shown at …" is only true while the live number still IS the one the visitor saw.
+      capturedAt: snapshotRate && snapshotRate.ourPriceDisplay === rate.ourPriceDisplay ? snapshotRate.capturedAt : null,
+    };
+  } else if (snapshotRate) {
+    summaryRate = snapshotRate;
+  }
 
   /* ────────────── field setters ────────────── */
+
+  const openDetails = useCallback(() => setDetailsOpen(true), []);
 
   const setText = useCallback((field: "fullName" | "whatsapp" | "email" | "message", value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -247,7 +388,9 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
       if (prev.pairId === next) return prev;
       // A pair change invalidates a prefilled estimate (it belonged to the old pair);
       // a manual edit is the visitor's own number and is kept.
-      return { ...prev, pairId: next, estimateText: prev.estimateEdited ? prev.estimateText : "" };
+      return prev.estimateEdited
+        ? { ...prev, pairId: next }
+        : { ...prev, pairId: next, estimateText: "", estimateValue: null };
     });
     setErrors((prev) => withoutError(withoutError(prev, "pairId"), "amount"));
     setFormError(null);
@@ -257,20 +400,22 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
     setValues((prev) => ({
       ...prev,
       amountText: value,
+      amountValue: null,
       estimateText: prev.estimateEdited ? prev.estimateText : "",
+      estimateValue: prev.estimateEdited ? prev.estimateValue : null,
     }));
     setErrors((prev) => withoutError(prev, "amount"));
     setFormError(null);
   }, []);
 
   const setEstimateText = useCallback((value: string) => {
-    setValues((prev) => ({ ...prev, estimateText: value, estimateEdited: true }));
+    setValues((prev) => ({ ...prev, estimateText: value, estimateValue: null, estimateEdited: true }));
     setErrors((prev) => withoutError(prev, "estimatedReceive"));
     setFormError(null);
   }, []);
 
   const recalculate = useCallback(() => {
-    setValues((prev) => ({ ...prev, estimateText: "", estimateEdited: false }));
+    setValues((prev) => ({ ...prev, estimateText: "", estimateValue: null, estimateEdited: false }));
     setErrors((prev) => withoutError(prev, "estimatedReceive"));
   }, []);
 
@@ -293,13 +438,21 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
     });
   }, [formRef]);
 
+  /** Apply field errors; a collapsed details group must open so its errors can be seen and focused. */
+  const showFieldErrors = useCallback(
+    (fieldErrors: ExchangeRequestFieldErrors) => {
+      setErrors(fieldErrors);
+      if (hasDetailErrors(fieldErrors)) setDetailsOpen(true);
+      focusFirstInvalid();
+    },
+    [focusFirstInvalid],
+  );
+
   const submit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (inFlightRef.current) return;
 
-      const trimmedEstimate = estimateText.trim();
-      const parsedEstimate = trimmedEstimate.length > 0 ? parseAmountInput(trimmedEstimate) : null;
       const candidate = {
         fullName: values.fullName,
         whatsapp: values.whatsapp,
@@ -307,7 +460,7 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
         pairId: values.pairId,
         // Empty → undefined so the schema reports "required" rather than "invalid_amount".
         amount: values.amountText.trim().length > 0 ? amount : undefined,
-        estimatedReceive: parsedEstimate,
+        estimatedReceive: estimateNumber,
         message: values.message,
         consent: values.consent,
         hp: values.hp,
@@ -316,9 +469,8 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
 
       const validation = validateExchangeRequest(candidate);
       if (!validation.success) {
-        setErrors(pickFieldErrors(validation.errors));
+        showFieldErrors(pickFieldErrors(validation.errors));
         setFormError(validation.errors._form ? "unknown" : null);
-        focusFirstInvalid();
         return;
       }
 
@@ -345,16 +497,15 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
         }
         if (result.code === "validation_error") {
           const fieldErrors = pickFieldErrors(result.errors);
-          setErrors(fieldErrors);
+          showFieldErrors(fieldErrors);
           // A validation error that names no field we render still needs a visible outcome.
           setFormError(Object.keys(fieldErrors).length === 0 ? "unknown" : null);
-          focusFirstInvalid();
           return;
         }
         setFormError(result.code);
       });
     },
-    [amount, estimateText, focusFirstInvalid, locale, values],
+    [amount, estimateNumber, locale, showFieldErrors, values],
   );
 
   const startAnother = useCallback(() => {
@@ -367,6 +518,9 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
     setFormError(null);
     setSubmitting(false);
     setSuccess(null);
+    // The exchange details were cleared: nothing is pre-filled any more, and the visitor has to enter them.
+    setHasPrefill(false);
+    setDetailsOpen(true);
   }, [locale]);
 
   return {
@@ -375,7 +529,7 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
     formError,
     submitting,
     success,
-    hasPrefill: prefill !== null,
+    hasPrefill,
     pair,
     rate,
     marketStatus,
@@ -384,8 +538,12 @@ export function useExchangeRequestForm({ prefill, formRef }: UseExchangeRequestF
     spread: snapshot?.spread ?? DEFAULT_EXCHANGE_SPREAD,
     amount,
     estimateText,
+    estimate,
     estimateMode,
     canCompute,
+    summaryRate,
+    detailsOpen,
+    openDetails,
     setText,
     setPairId,
     setAmountText,

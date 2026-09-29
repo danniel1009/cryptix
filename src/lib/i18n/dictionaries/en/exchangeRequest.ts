@@ -6,7 +6,8 @@ import { disclaimer } from "./disclaimer";
  * Placeholders: `{time}` formatted time of the indicative rate,
  * `{reference}` the "CX-XXXXXX" reference from `/api/exchange-request`,
  * `{n}` / `{total}` for the optional step indicator,
- * `{min}` / `{max}` formatted amount limits of the sent currency.
+ * `{min}` / `{max}` formatted amount limits of the sent currency,
+ * `{market}` formatted market price (summary header).
  *
  * Consumed by: ExchangeRequestModal (opened via `useExchangeRequest()`).
  */
@@ -43,7 +44,7 @@ export const exchangeRequest = {
   },
   prefillNote: "Pre-filled from the rate checker — you can change any value.",
   stepLabel: "Step {n} of {total}",
-  noAccountNote: "No account needed. Nothing is executed automatically.",
+  noAccountNote: "No account needed. Our team confirms every request with you personally.",
   /** Tiny mono group labels above the two field groups. */
   sectionContact: "Your contact details",
   sectionExchange: "Exchange details",
@@ -62,4 +63,20 @@ export const exchangeRequest = {
     polling: "Live stream unavailable. Prices refresh periodically.",
     offline: "You appear to be offline. Estimates use the last received data.",
   },
+  /**
+   * Summary header at the top of the form: what is being requested and the
+   * indicative rate it is based on. `{market}` formatted market price with
+   * currency, `{spread}` formatted spread ("5%"), `{time}` formatted clock time
+   * at which the rate checker showed this rate.
+   */
+  summary: {
+    title: "You are requesting",
+    rate: "Indicative rate",
+    marketNote: "Market {market} · our rate includes a {spread} spread",
+    capturedAt: "Rate as shown at {time}",
+  },
+  /** Ghost button that expands the collapsed exchange-details group (pair / amount / estimate). */
+  editDetails: "Edit details",
+  /** Footer CTA next to submit: opens WhatsApp with the current pair / amount pre-filled. */
+  chatWhatsApp: "Chat directly on WhatsApp",
 };
