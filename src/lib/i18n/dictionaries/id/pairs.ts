@@ -1,0 +1,17 @@
+import type { pairs as en } from "@/lib/i18n/dictionaries/en/pairs";
+
+/** `t.pairs` (Bahasa Indonesia) — mirror of `en/pairs.ts`. */
+export const pairs: typeof en = {
+  eyebrow: "Pair exchange",
+  title: "Pair exchange yang didukung",
+  description:
+    "Saat ini kami melayani exchange untuk pair berikut. Setiap kartu menampilkan acuan harga pasar dan kurs indikatif kami.",
+  ourRate: "Kurs kami",
+  ourRateFormula: "HARGA PASAR + {spread}",
+  note: "Kurs exchange final dikonfirmasi oleh tim kami sebelum transaksi.",
+  youSend: "Anda kirim",
+  youReceive: "Anda terima",
+  checkRate: "Cek kurs",
+  indicativeLabel: "Indikatif",
+  perPairNote: "Kurs bersifat indikatif dan diperbarui mengikuti data pasar.",
+};

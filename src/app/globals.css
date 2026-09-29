@@ -1,26 +1,313 @@
+/*
+ * Cryptix design system — Tailwind v4.
+ * Tokens follow docs/DESIGN.md. The site is dark-only (color-scheme: dark).
+ *
+ * Raw values live on :root; `@theme inline` maps them to Tailwind utilities
+ * (bg-bg, bg-surface, border-line, text-accent, font-mono, shadow-glow, …).
+ */
 @import "tailwindcss";
 
+/* `dark:` variants resolve against the `.dark` class set on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #050608;
+  --surface: #0b0e12;
+  --surface-2: #11151b;
+  --surface-3: #171c24;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --fg: #f2f4f7;
+  --muted: #9aa3b2;
+  --faint: #5f6b7a;
+  --accent: #22e58a;
+  --accent-strong: #10b981;
+  --accent-soft: rgba(34, 229, 138, 0.1);
+  --accent-glow: rgba(34, 229, 138, 0.35);
+  --danger: #f0525f;
+  --warning: #f5b942;
+  --whatsapp: #25d366;
+
+  /* Sticky header height (mobile → desktop). Consumed by scroll offsets. */
+  --nav-h: 64px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (min-width: 1024px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --nav-h: 72px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  /* Colours */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-whatsapp: var(--whatsapp);
+
+  /* Typography (next/font sets --font-geist-* on <html>) */
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Shadows */
+  --shadow-glow: 0 0 0 1px rgba(34, 229, 138, 0.22), 0 12px 48px -14px rgba(34, 229, 138, 0.4);
+  --shadow-glow-sm: 0 0 0 1px rgba(34, 229, 138, 0.18), 0 6px 24px -10px rgba(34, 229, 138, 0.35);
+  --shadow-card: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 24px 48px -28px rgba(0, 0, 0, 0.7);
+  --shadow-float: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Animations */
+  --animate-halo: halo 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-halo-slow: halo 3.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-float: float-y 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-fade-in: fade-in 0.4s var(--ease-out-expo) both;
+
+  @keyframes halo {
+    0% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @keyframes float-y {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    /* Anchor targets clear the sticky header (+ Section adds a little breathing room). */
+    scroll-padding-top: var(--nav-h);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    background-color: var(--bg);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background-color: rgba(34, 229, 138, 0.28);
+    color: var(--fg);
+  }
+
+  /* Baseline focus ring; components layer `focus-visible:ring-*` on top. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::placeholder {
+    color: var(--faint);
+    opacity: 1;
+  }
+
+  /* Numeric inputs: no spinners, mono digits are applied by components. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+
+/* Translucent surface + blur + hairline. Used by the scrolled navbar, chips, sheets. */
+@utility glass {
+  background-color: color-mix(in srgb, var(--surface) 64%, transparent);
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Soft emerald box glow for important cards (rate checker, CTA). */
+@utility glow-accent {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility text-glow {
+  text-shadow: 0 0 24px rgba(34, 229, 138, 0.45);
+}
+
+/* Faint 1px grid, terminal-like. Fades out at the edges via mask. */
+@utility grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center top;
+}
+
+/* Very subtle film grain overlay. Apply to a positioned container. */
+@utility noise {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background-size: 160px 160px;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Tabular figures for prices/rates so digits do not jitter while animating. */
+@utility nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Safe-area helpers (iOS home indicator etc.). */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Floating elements: 1.25rem inset plus the device safe area. */
+@utility bottom-safe {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+@utility right-safe {
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+}
+
+/* Skeleton shimmer surface. */
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Two-ring focus treatment on dark surfaces (ring-offset uses the page bg). */
+@utility focus-ring {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent);
 }

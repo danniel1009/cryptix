@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Cryptix mark: hexagon frame cut through by an energy bolt. Same geometry as src/components/ui/Logo.tsx -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7CF5BE"/>
+      <stop offset="0.55" stop-color="#22E58A"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="#fff"/>
+      <path d="M17.2 10.4 L35.9 30 H27.4 L46.1 54.6" fill="none" stroke="#000" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#050608"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+  <!-- Mark scaled 0.85 about the centre (32,32) so it clears the rounded corners -->
+  <g transform="translate(32 32) scale(0.85) translate(-32 -32)">
+    <path d="M32 5 L55.4 18.5 V45.5 L32 59 L8.6 45.5 V18.5 Z" fill="#22E58A" fill-opacity="0.07"/>
+    <path d="M32 5 L55.4 18.5 V45.5 L32 59 L8.6 45.5 V18.5 Z" fill="none" stroke="url(#g)" stroke-width="3.4" stroke-linejoin="round" mask="url(#m)"/>
+    <path d="M15 6 L37 29 H27 L49 58" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

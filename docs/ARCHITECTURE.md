@@ -91,7 +91,7 @@ UI rule: `status === "live"` → "● LIVE"; connection reconnecting/polling wit
 
 ### WhatsApp (`@/lib/whatsapp`)
 `isWhatsAppConfigured()`, `buildWhatsAppUrl(message?)` → `https://wa.me/<digits>?text=<encoded>`,
-`buildExchangeInquiryMessage({ locale, pair, amount, estimatedReceive, reference? })`,
+`buildExchangeInquiryMessage({ locale, pairId, amount, estimatedReceive?, reference? })`,
 `buildGeneralInquiryMessage(locale)`. Templates come from `t.whatsapp` (see `dictionaries/en/whatsapp.ts`). Amounts are formatted with the locale (`1,000 USDT` / `1.000 USDT`, `0.009 BTC` / `0,009 BTC`).
 
 ### Forms API contract (client ↔ `/api/contact`, `/api/exchange-request`)
