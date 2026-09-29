@@ -5,7 +5,8 @@ import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
-import { Reveal } from "@/components/ui/Reveal";
+import { motion, useReducedMotion } from "framer-motion";
+import { REVEAL_EASE } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { interpolate } from "@/lib/i18n/dictionaries";
@@ -28,6 +29,7 @@ export function RateChecker() {
   const { t, formatSpread } = useI18n();
   const { open } = useExchangeRequest();
   const rc = useRateChecker();
+  const reduced = useReducedMotion() ?? false;
 
   const connectionNote =
     rc.connectionNote === "polling" ? t.market.pollingNote : rc.connectionNote === "offline" ? t.market.offlineNote : null;
@@ -35,7 +37,7 @@ export function RateChecker() {
   return (
     <Section id="exchange" aria-labelledby={HEADING_ID} className="pt-8 sm:pt-12 lg:pt-16">
       <Container>
-        <Reveal>
+        <motion.div initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: REVEAL_EASE }}>
           <SectionHeading
             id={HEADING_ID}
             align="center"
@@ -44,9 +46,16 @@ export function RateChecker() {
             description={t.rateChecker.description}
             titleClassName="font-normal leading-[1.1] tracking-[-0.02em] lg:text-[2.75rem]"
           />
-        </Reveal>
+        </motion.div>
 
-        <Reveal delay={0.1} className="mt-10 sm:mt-14">
+        {/* The converter is the page's most important element: animate on mount (not on
+            scroll-into-view) so it can never stay hidden if an observer never fires. */}
+        <motion.div
+          className="mt-10 sm:mt-14"
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: REVEAL_EASE }}
+        >
           <Card padding="none" className="glow-accent mx-auto w-full max-w-[680px] rounded-3xl border-line bg-surface/90 p-5 sm:p-7 lg:p-8">
             <ConverterPanels rc={rc} />
             <RateDetails rc={rc} />
@@ -73,7 +82,7 @@ export function RateChecker() {
               {interpolate(t.disclaimer.full, { spread: formatSpread(rc.spread) })}
             </p>
           </div>
-        </Reveal>
+        </motion.div>
       </Container>
     </Section>
   );
