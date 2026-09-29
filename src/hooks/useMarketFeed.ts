@@ -33,6 +33,12 @@ export const MARKET_STREAM_ENDPOINT = "/api/market/stream";
 export const STATUS_TICK_MS = 10_000;
 /** While polling, try to re-establish the stream this often. */
 export const STREAM_RETRY_INTERVAL_MS = 60_000;
+/**
+ * A hidden tab keeps its transports for this long before pausing them, so quick
+ * tab switches (or environments that flap visibilityState) never tear the
+ * stream down and back up. An SSE connection is cheap to keep open.
+ */
+export const HIDDEN_PAUSE_GRACE_MS = 45_000;
 
 export interface ReceivedSnapshot {
   snapshot: MarketSnapshot;
@@ -93,6 +99,10 @@ interface FeedRuntime {
   source: EventSource | null;
   pollTimer: ReturnType<typeof setInterval> | null;
   retryTimer: ReturnType<typeof setTimeout> | null;
+  /** Pending "tab has been hidden for a while" pause. */
+  hiddenTimer: ReturnType<typeof setTimeout> | null;
+  /** True while transports are intentionally torn down (hidden tab / offline). */
+  paused: boolean;
   fetchController: AbortController | null;
 }
 
@@ -114,6 +124,8 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
       source: null,
       pollTimer: null,
       retryTimer: null,
+      hiddenTimer: null,
+      paused: false,
       fetchController: null,
     };
 
@@ -222,28 +234,52 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
       };
     };
 
+    const clearHiddenPause = () => {
+      if (rt.hiddenTimer) {
+        clearTimeout(rt.hiddenTimer);
+        rt.hiddenTimer = null;
+      }
+    };
+
     /** Tear down every transport (hidden tab, offline, unmount). */
     const pause = () => {
+      clearHiddenPause();
       closeStream();
       stopPolling();
       clearStreamRetry();
       rt.fetchController?.abort();
       rt.fetchController = null;
+      rt.paused = true;
     };
 
     /** Re-establish transports after a pause (visible again / back online). */
     const resume = () => {
       if (!rt.active || !rt.online) return;
       pause();
+      rt.paused = false;
       rt.failures = 0;
       setConnection(rt.hasData ? "reconnecting" : "connecting");
       void fetchSnapshot();
-      if (document.visibilityState !== "hidden") openStream();
+      openStream();
+    };
+
+    /** Hidden tab: keep the transports for a grace period, then pause. */
+    const scheduleHiddenPause = () => {
+      if (rt.hiddenTimer || rt.paused) return;
+      rt.hiddenTimer = setTimeout(() => {
+        rt.hiddenTimer = null;
+        if (rt.active && document.visibilityState === "hidden") pause();
+      }, HIDDEN_PAUSE_GRACE_MS);
     };
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") pause();
-      else resume();
+      if (document.visibilityState === "hidden") {
+        scheduleHiddenPause();
+        return;
+      }
+      clearHiddenPause();
+      // Only rebuild transports if they were actually torn down.
+      if (rt.paused) resume();
     };
     const onOnline = () => {
       rt.online = true;
@@ -272,7 +308,8 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
         return;
       }
       void fetchSnapshot();
-      if (document.visibilityState !== "hidden") openStream();
+      openStream();
+      if (document.visibilityState === "hidden") scheduleHiddenPause();
     }, 0);
 
     return () => {

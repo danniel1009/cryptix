@@ -3,7 +3,7 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { StrictMode, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CLIENT_POLL_INTERVAL_MS, CLIENT_STREAM_MAX_FAILURES, MARKET_STALE_AFTER_MS, MARKET_UNAVAILABLE_AFTER_MS } from "@/config/market";
-import { STATUS_TICK_MS, STREAM_RETRY_INTERVAL_MS, effectiveUpdatedAt, isSnapshotLike, useMarketFeed } from "@/hooks/useMarketFeed";
+import { STATUS_TICK_MS, STREAM_RETRY_INTERVAL_MS, effectiveUpdatedAt, isSnapshotLike, useMarketFeed, HIDDEN_PAUSE_GRACE_MS } from "@/hooks/useMarketFeed";
 import type { MarketSnapshot } from "@/lib/market/types";
 
 /** Minimal EventSource double with test hooks. */
@@ -199,8 +199,19 @@ describe("useMarketFeed", () => {
     await act(async () => FakeEventSource.live[0].open());
     expect(result.current.connection).toBe("live");
 
+    // Hidden: transports survive the grace period (quick tab switches never reconnect) …
     Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
     await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    expect(FakeEventSource.live).toHaveLength(1);
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    expect(FakeEventSource.live).toHaveLength(1); // still the same stream, nothing rebuilt
+    expect(result.current.connection).toBe("live");
+
+    // … but a tab hidden for longer than the grace period is paused, and resumed when shown again.
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    await flush(HIDDEN_PAUSE_GRACE_MS + 1);
     expect(FakeEventSource.live).toHaveLength(0);
     Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
     await act(async () => document.dispatchEvent(new Event("visibilitychange")));
