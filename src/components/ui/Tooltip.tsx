@@ -8,6 +8,8 @@ import {
   type KeyboardEvent,
   type ReactElement,
   type ReactNode,
+  useEffect,
+  useRef,
 } from "react";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 import { cn } from "@/lib/utils";
@@ -28,8 +30,20 @@ export function Tooltip({ content, children, side = "top", className }: TooltipP
   const id = useId();
   const reduced = useReducedMotionSafe();
   const [open, setOpen] = useState(false);
-  const show = () => setOpen(true);
-  const hide = () => setOpen(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const show = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = null;
+    setOpen(true);
+  };
+  // Short grace period so the pointer can travel from the trigger into the bubble (WCAG 1.4.13).
+  const hide = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setOpen(false), 150);
+  };
+  useEffect(() => () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+  }, []);
   const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
     if (event.key === "Escape") hide();
   };
@@ -53,7 +67,8 @@ export function Tooltip({ content, children, side = "top", className }: TooltipP
         animate={{ opacity: open ? 1 : 0, y: open ? 0 : offset }}
         transition={{ duration: reduced ? 0 : 0.15 }}
         className={cn(
-          "pointer-events-none absolute left-1/2 z-50 w-max max-w-[16rem] -translate-x-1/2 rounded-lg border border-line bg-surface-3 px-3 py-1.5 text-xs leading-snug text-fg shadow-float",
+          "absolute left-1/2 z-50 w-max max-w-[16rem] -translate-x-1/2 rounded-lg border border-line bg-surface-3 px-3 py-1.5 text-xs leading-snug text-fg shadow-float",
+          open ? "pointer-events-auto" : "pointer-events-none",
           side === "top" ? "bottom-full mb-2" : "top-full mt-2",
           className,
         )}

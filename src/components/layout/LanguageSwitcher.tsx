@@ -101,7 +101,7 @@ export function LanguageSwitcher({ variant = "navbar", className }: LanguageSwit
                 "transition-colors duration-200",
                 focusRing,
                 variant === "navbar" && [
-                  "rounded-full px-2.5 py-1 leading-none",
+                  "rounded-full px-3 py-1 leading-none min-h-11 lg:min-h-0 lg:px-2.5",
                   active ? "bg-accent-soft text-accent" : "text-muted hover:text-fg",
                 ],
                 variant === "footer" && [

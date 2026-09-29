@@ -107,7 +107,8 @@ describe("createMarketService", () => {
     expect(failed.rates).toHaveLength(SUPPORTED_PAIRS.length);
     expect(failed.updatedAt).toBe(goodUpdatedAt); // did NOT advance
     expect(failed.status).toBe("live"); // still within the stale threshold
-    expect(failed.error).toMatch(/^binance: Request timed out/);
+    // The public snapshot carries provider NAMES only; the detailed message stays in the (throttled) logs.
+    expect(failed.error).toBe("providers unavailable: binance");
     expect(failed.error).not.toMatch(/api[_-]?key|token/i);
 
     clock.set(T0 + MARKET_STALE_AFTER_MS);
@@ -136,7 +137,7 @@ describe("createMarketService", () => {
     const snap = await svc.getMarketSnapshot();
     expect(snap.status).toBe("live");
     expect(snap.updatedAt).toBe(new Date(clock.now()).toISOString());
-    expect(snap.error).toBe("indodax: HTTP 503 from https://indodax.com/api/summaries");
+    expect(snap.error).toBe("providers unavailable: indodax");
     expect(snap.rates.find((r) => r.pairId === "USDT_IDR")).toBeDefined();
     expect(snap.rates.find((r) => r.pairId === "USDT_IDR")?.updatedAt).toBe(new Date(T0).toISOString());
   });
@@ -146,7 +147,7 @@ describe("createMarketService", () => {
     const svc = createMarketService({ provider: source, spread: 0.05, allowMock: false, logger: null });
     const snap = await svc.getMarketSnapshot();
     expect(snap.status).toBe("live");
-    expect(snap.error).toBe("missing quotes: USDT/IDR");
+    expect(snap.error).toBe("missing pairs: USDT/IDR");
     expect(snap.rates.map((r) => r.pairId)).not.toContain("USDT_IDR");
   });
 
@@ -159,7 +160,7 @@ describe("createMarketService", () => {
     expect(snap.sources).toEqual([]);
     expect(snap.status).toBe("unavailable");
     expect(snap.updatedAt).toBeNull();
-    expect(snap.error).toMatch(/^missing quotes: /);
+    expect(snap.error).toMatch(/^missing pairs: /);
   });
 
   it("outside production the mock fills ONLY the gaps and the mixed sources are reported honestly", async () => {
@@ -188,7 +189,7 @@ describe("createMarketService", () => {
     clock.advance(MARKET_REFRESH_INTERVAL_MS);
     const snap = await svc.getMarketSnapshot();
     expect(snap.sources).toEqual(["binance"]);
-    expect(snap.error).toMatch(/^binance: Network error/);
+    expect(snap.error).toBe("providers unavailable: binance");
   });
 
   it("never throws: a rejecting source yields an unavailable snapshot with a safe error", async () => {
@@ -198,7 +199,8 @@ describe("createMarketService", () => {
     const snap = await svc.getMarketSnapshot();
     expect(snap.status).toBe("unavailable");
     expect(snap.quotes).toEqual([]);
-    expect(snap.error).toContain("composite: fetchAll blew up");
+    expect(snap.error).toContain("providers unavailable: composite");
+    expect(snap.error).not.toContain("blew up");
     expect(warn).toHaveBeenCalled();
     // Recovery on the next refresh.
     source.fetchAll.mockResolvedValueOnce({ quotes: fullReal(), errors: [] });

@@ -44,6 +44,7 @@ export function Checkbox({
           type="checkbox"
           required={required}
           aria-invalid={error ? true : undefined}
+          {...rest}
           aria-describedby={describedBy(id, messages, rest["aria-describedby"])}
           className={cn(
             "peer mt-0.5 h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-md border border-line-strong bg-surface-2",
@@ -54,7 +55,6 @@ export function Checkbox({
             error && "border-danger/60",
             className,
           )}
-          {...rest}
         />
         <Check
           aria-hidden="true"

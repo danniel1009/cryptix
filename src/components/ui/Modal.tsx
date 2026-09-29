@@ -227,7 +227,7 @@ export function Modal({
               className,
             )}
           >
-            <header className="flex items-start justify-between gap-4 px-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 sm:pt-7">
+            <div className="flex items-start justify-between gap-4 px-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 sm:pt-7">
               <div className="min-w-0 pt-1">
                 <h2 id={titleId} className="text-xl font-semibold tracking-tight text-fg sm:text-2xl">
                   {title}
@@ -245,12 +245,12 @@ export function Modal({
                 disabled={dismissible === false}
                 className="-mr-2 -mt-1"
               />
-            </header>
+            </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 scrollbar-thin sm:px-8">{children}</div>
             {footer ? (
-              <footer className="border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:pb-4">
+              <div className="border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:pb-4">
                 {footer}
-              </footer>
+              </div>
             ) : (
               <div className="pb-safe sm:hidden" />
             )}

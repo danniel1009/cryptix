@@ -25,7 +25,7 @@ describe("Accordion", () => {
     const onToggle = vi.fn();
     render(<Accordion items={items} onToggle={onToggle} />);
     const trigger = screen.getByRole("button", { name: "Second question" });
-    expect(screen.queryByText("Second answer")).not.toBeInTheDocument();
+    expect(screen.getByText("Second answer").closest('[role="region"]')).toHaveAttribute("aria-hidden", "true");
 
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -34,7 +34,7 @@ describe("Accordion", () => {
 
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    await waitFor(() => expect(screen.queryByText("Second answer")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Second answer").closest('[role="region"]')).toHaveAttribute("aria-hidden", "true"));
     expect(onToggle).toHaveBeenLastCalledWith("b", false);
   });
 

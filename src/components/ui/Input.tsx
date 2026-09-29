@@ -132,6 +132,7 @@ export function Input({
           id={id}
           required={required}
           aria-invalid={error ? true : undefined}
+          {...rest}
           aria-describedby={describedBy(id, messages, rest["aria-describedby"])}
           className={cn(
             CONTROL_CLASSES,
@@ -142,7 +143,6 @@ export function Input({
             error && CONTROL_ERROR_CLASSES,
             className,
           )}
-          {...rest}
         />
         {rightAddon ? (
           <span className="absolute inset-y-0 right-4 flex items-center font-mono text-sm text-muted">

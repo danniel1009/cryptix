@@ -66,9 +66,10 @@ describe("GET /api/market/stream", () => {
     const text = await readUntil(reader, "event: snapshot");
     expect(text).toMatch(/^retry: \d+\n\n/);
     const frame = text.slice(text.indexOf("event: snapshot"));
-    expect(frame).toMatch(/^event: snapshot\nid: 2026-09-29T08:00:00\.000Z\ndata: \{/);
+    // The frame is stamped at send time (true data age for clients), so the id is "now", not the cached generatedAt.
+    expect(frame).toMatch(/^event: snapshot\nid: \d{4}-\d{2}-\d{2}T[\d:.]+Z\ndata: \{/);
     const data = frame.split("\n").find((l) => l.startsWith("data: "))!.slice("data: ".length);
-    expect(JSON.parse(data)).toEqual(snapshot);
+    expect(JSON.parse(data)).toEqual({ ...snapshot, generatedAt: expect.any(String) });
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
 
     controller.abort();

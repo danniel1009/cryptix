@@ -187,7 +187,11 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
       clearStreamRetry();
       rt.retryTimer = setTimeout(() => {
         rt.retryTimer = null;
-        if (!rt.active || !rt.online || document.visibilityState === "hidden") return;
+        if (!rt.active) return;
+        if (!rt.online || document.visibilityState === "hidden") {
+          scheduleStreamRetry(); // try again later rather than never
+          return;
+        }
         rt.failures = 0;
         openStream(); // polling keeps running until the stream actually opens
       }, STREAM_RETRY_INTERVAL_MS);
@@ -230,7 +234,8 @@ export function useMarketFeed(options: UseMarketFeedOptions = {}): MarketFeed {
           scheduleStreamRetry();
           return;
         }
-        setConnection("reconnecting");
+        // While polling is the active transport, a probing stream's hiccup is not a regression.
+        if (rt.pollTimer === null) setConnection("reconnecting");
       };
     };
 

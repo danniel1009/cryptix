@@ -27,6 +27,8 @@ function snapshotFrame(snapshot: MarketSnapshot): string {
 export async function GET(request: Request): Promise<Response> {
   const encoder = new TextEncoder();
   let pushTimer: ReturnType<typeof setInterval> | undefined;
+
+  let lastSent: MarketSnapshot | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
   let closed = false;
   let cleanup: () => void = () => {};
@@ -65,7 +67,11 @@ export async function GET(request: Request): Promise<Response> {
 
       // First frame: wait for a real snapshot so the client renders immediately.
       try {
-        send(snapshotFrame(await getMarketSnapshot()));
+        {
+        const first = await getMarketSnapshot();
+        lastSent = first;
+        send(snapshotFrame({ ...first, generatedAt: new Date().toISOString() }));
+      }
       } catch {
         /* the service never throws, but a stream must never crash either */
       }
@@ -73,7 +79,12 @@ export async function GET(request: Request): Promise<Response> {
 
       pushTimer = setInterval(() => {
         const cached = getCachedSnapshot();
-        if (cached) send(snapshotFrame(cached));
+        // Only push when the service produced a NEW snapshot (the heartbeat keeps the
+        // connection alive); stamp it at send time so clients measure true data age.
+        if (cached && cached !== lastSent) {
+          lastSent = cached;
+          send(snapshotFrame({ ...cached, generatedAt: new Date().toISOString() }));
+        }
         // Background refresh: cached within the interval, deduped when in flight.
         void getMarketSnapshot().catch(() => {});
       }, MARKET_STREAM_PUSH_INTERVAL_MS);

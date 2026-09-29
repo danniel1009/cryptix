@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { useCallback, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
@@ -112,23 +112,20 @@ export function Accordion({
                 </motion.span>
               </button>
             </Heading>
-            <AnimatePresence initial={false}>
-              {isOpen ? (
-                <motion.div
-                  key="panel"
-                  id={panelId}
-                  role="region"
-                  aria-labelledby={triggerId}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: reduced ? 0 : 0.32, ease: EASE }}
-                  className="overflow-hidden"
-                >
-                  <div className="pb-6 pr-14 text-sm leading-relaxed text-muted sm:text-base">{item.content}</div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+            {/* Always mounted so every answer is in the server HTML; collapsed panels are inert + hidden from AT. */}
+            <motion.div
+              id={panelId}
+              role="region"
+              aria-labelledby={triggerId}
+              aria-hidden={!isOpen}
+              inert={!isOpen}
+              initial={false}
+              animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+              transition={{ duration: reduced ? 0 : 0.32, ease: EASE }}
+              className="overflow-hidden"
+            >
+              <div className="pb-6 pr-14 text-sm leading-relaxed text-muted sm:text-base">{item.content}</div>
+            </motion.div>
           </div>
         );
       })}

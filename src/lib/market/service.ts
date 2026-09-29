@@ -1,5 +1,5 @@
 import "server-only";
-import { MARKET_REFRESH_INTERVAL_MS } from "@/config/market";
+import { MARKET_REFRESH_INTERVAL_MS, MARKET_UNAVAILABLE_AFTER_MS } from "@/config/market";
 import { serverConfig } from "@/config/server";
 import { describeError } from "@/lib/market/http";
 import { buildProviderChain } from "@/lib/market/providers";
@@ -78,6 +78,25 @@ export interface MarketService {
 
 const ERROR_MAX_CHARS = 240;
 
+/** Public, secret-free summary for the snapshot: provider NAMES and missing pairs only. */
+function publicError(errors: readonly ProviderError[], missingRequired: readonly string[]): string | null {
+  const parts: string[] = [];
+  const providers = Array.from(new Set(errors.map((e) => e.provider))).sort();
+  if (providers.length) parts.push(`providers unavailable: ${providers.join(", ")}`);
+  if (missingRequired.length) parts.push(`missing pairs: ${missingRequired.join(", ")}`);
+  return parts.length ? parts.join("; ") : null;
+}
+
+const WARN_THROTTLE_MS = 5 * 60_000;
+const lastWarnAt = new Map<string, number>();
+/** Log a warning once per distinct message per WARN_THROTTLE_MS (state transitions still log immediately). */
+export function throttledWarn(logger: { warn: (msg: string) => void }, key: string, message: string, at = Date.now()): void {
+  const last = lastWarnAt.get(key);
+  if (last !== undefined && at - last < WARN_THROTTLE_MS) return;
+  lastWarnAt.set(key, at);
+  logger.warn(message);
+}
+
 function formatErrors(errors: readonly ProviderError[], missingRequired: readonly string[]): string | null {
   const parts: string[] = [];
   for (const e of errors.slice(0, 3)) parts.push(`${e.provider}: ${e.message}`);
@@ -139,6 +158,13 @@ export function createMarketService(options: MarketServiceOptions): MarketServic
         }
       }
 
+      // Last-good quotes are retained only within the unavailable window: a pair whose
+      // provider is down must drop out (and show as unavailable) rather than be re-served
+      // indefinitely under a snapshot that other providers keep "live".
+      for (const [key, q] of lastGood) {
+        if (finishedAt - Date.parse(q.updatedAt) > MARKET_UNAVAILABLE_AFTER_MS) lastGood.delete(key);
+      }
+
       // Merge priority: fresh real ▸ last-good real ▸ (dev only) fresh mock.
       const merged: MarketQuote[] = [];
       let usedMock = false;
@@ -157,9 +183,10 @@ export function createMarketService(options: MarketServiceOptions): MarketServic
       const anyFresh = freshReal.size > 0 || usedMock;
       const updatedAt = anyFresh ? generatedAt : (snapshot?.updatedAt ?? null);
       const errors = Array.isArray(result.errors) ? result.errors : [];
-      const error = formatErrors(errors, missingRequired);
+      const detailedError = formatErrors(errors, missingRequired);
+      const error = publicError(errors, missingRequired);
 
-      if (error && logger) logger.warn(`[market] refresh finished with problems — ${error}`);
+      if (detailedError && logger) throttledWarn(logger, detailedError, `[market] refresh finished with problems — ${detailedError}`, finishedAt);
 
       snapshot = buildSnapshot({ quotes: merged, spread, updatedAt, generatedAt, error });
       return snapshot;
@@ -215,7 +242,7 @@ function getDefaultService(): MarketService {
   const g = globalThis as GlobalWithService;
   if (!g[GLOBAL_KEY]) {
     const chain = buildProviderChain(serverConfig, {
-      onError: (e) => console.warn(`[market] provider ${e.provider} failed: ${e.message}`),
+      onError: (e) => throttledWarn(console, `provider:${e.provider}:${e.message}`, `[market] provider ${e.provider} failed: ${e.message}`),
     });
     console.info(`[market] provider chain: ${chain.chain.join(" → ") || "(none)"}`);
     g[GLOBAL_KEY] = createMarketService({

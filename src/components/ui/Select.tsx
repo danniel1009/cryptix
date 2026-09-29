@@ -69,6 +69,7 @@ export function Select({
           id={id}
           required={required}
           aria-invalid={error ? true : undefined}
+          {...rest}
           aria-describedby={describedBy(id, messages, rest["aria-describedby"])}
           className={cn(
             CONTROL_CLASSES,
@@ -78,7 +79,6 @@ export function Select({
             error && CONTROL_ERROR_CLASSES,
             className,
           )}
-          {...rest}
         >
           {placeholder ? (
             <option value="" disabled>

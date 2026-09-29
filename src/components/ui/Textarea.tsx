@@ -45,6 +45,7 @@ export function Textarea({
         rows={rows}
         required={required}
         aria-invalid={error ? true : undefined}
+        {...rest}
         aria-describedby={describedBy(id, messages, rest["aria-describedby"])}
         className={cn(
           CONTROL_CLASSES,
@@ -52,7 +53,6 @@ export function Textarea({
           error && CONTROL_ERROR_CLASSES,
           className,
         )}
-        {...rest}
       />
       <FieldMessage id={id} messages={messages} />
     </div>

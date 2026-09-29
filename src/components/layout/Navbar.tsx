@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { useState, type MouseEvent } from "react";
+import { useState, type MouseEvent, useEffect } from "react";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +48,16 @@ export function Navbar() {
   const scrollTo = useSmoothScrollTo();
   const reduced = useReducedMotionSafe();
   const [menuOpen, setMenuOpen] = useState(false);
+  // A menu left open while the viewport grows past `lg` would keep its focus trap + scroll lock.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setMenuOpen(false);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const onNavClick = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
     event.preventDefault();
