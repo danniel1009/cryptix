@@ -11,6 +11,7 @@ import { market } from "./market";
 import { howItWorks } from "./howItWorks";
 import { whyChooseUs } from "./whyChooseUs";
 import { pairs } from "./pairs";
+import { platforms } from "./platforms";
 import { security } from "./security";
 import { faq } from "./faq";
 import { contact } from "./contact";
@@ -37,6 +38,7 @@ export const id: Dictionary = {
   howItWorks,
   whyChooseUs,
   pairs,
+  platforms,
   security,
   faq,
   contact,

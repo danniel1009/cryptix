@@ -5,6 +5,7 @@ import { HowItWorks } from "@/components/sections/HowItWorks";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
 import { SupportedPairs } from "@/components/sections/SupportedPairs";
 import { Security } from "@/components/sections/Security";
+import { PlatformsStrip } from "@/components/sections/PlatformsStrip";
 import { Faq } from "@/components/sections/Faq";
 import { Contact } from "@/components/sections/Contact";
 import { ExchangeRequestModal } from "@/components/exchange/ExchangeRequestModal";
@@ -24,6 +25,7 @@ export default function HomePage() {
       <WhyChooseUs />
       <SupportedPairs />
       <Security />
+      <PlatformsStrip />
       <Faq />
       <Contact />
       <ExchangeRequestModal />
