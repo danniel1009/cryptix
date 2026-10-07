@@ -35,15 +35,17 @@ npm run check       # typecheck + lint + test
 
 ## Configuration (environment variables)
 
-All configuration is centralised: **`src/config/site.ts`** (brand, public contact details), **`src/config/exchange.ts`** (currencies, the supported pairs, limits, default spread), **`src/config/market.ts`** (refresh / stale thresholds) and **`src/config/server.ts`** (server-only secrets and provider chain). Nothing sensitive is hardcoded; see `.env.example`.
+All configuration is centralised: **`src/config/site.ts`** (brand, build-time fallbacks for the contact details), **`src/config/runtime.server.ts`** (runtime contact details: WhatsApp number + public e-mail, read per request), **`src/config/exchange.ts`** (currencies, the supported pairs, limits, default spread), **`src/config/market.ts`** (refresh / stale thresholds) and **`src/config/server.ts`** (server-only secrets and provider chain). Nothing sensitive is hardcoded; see `.env.example`.
 
 | Variable | Scope | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_BRAND_NAME` | public | Brand name (default `Cryptix`). Change once, applies everywhere. |
 | `NEXT_PUBLIC_SITE_URL` | public | Canonical URL for metadata, sitemap, robots, Open Graph. |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | public | WhatsApp number, international digits only (`628…`). Used by every WhatsApp link via `src/lib/whatsapp.ts`. |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | public | Email shown in the footer/contact section. |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | public | `en` (default) or `id`. |
+| `WHATSAPP_NUMBER` | **runtime** | WhatsApp number, international format; non-digits are stripped (`+62 823-1760-0972` → `6282317600972`). Read by the server on **every request** and passed to the page through `<RuntimeConfigProvider>`, so every WhatsApp link follows it: **edit the env file and restart the service — no rebuild, no deploy.** Empty = WhatsApp CTAs fall back to the contact form. |
+| `PUBLIC_CONTACT_EMAIL` | **runtime** | E-mail shown in the footer / contact section (same runtime semantics). Empty = not shown. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | public | Build-time **fallback** for `WHATSAPP_NUMBER` (dev convenience). Inlined at build time — changing it needs a rebuild. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | public | Build-time **fallback** for `PUBLIC_CONTACT_EMAIL`. Inlined at build time. |
 | `EXCHANGE_SPREAD` | server | Spread applied on top of the market price (`0.05` = 5 %). Sent to the client inside the market snapshot. |
 | `MARKET_PROVIDERS` | server | Ordered provider chain, e.g. `exchange,indodax,coingecko,tronscan`. |
 | `MARKET_EXCHANGE_API_URL` | server | Binance-compatible public market REST base URL. |
@@ -52,7 +54,7 @@ All configuration is centralised: **`src/config/site.ts`** (brand, public contac
 | `INDODAX_API_URL` | server | Indodax public API (USDT/IDR and other IDR pairs). |
 | `TRONSCAN_API_URL` / `TRONSCAN_API_KEY` | server | TronScan (USDT TRC20 token market info → USDT/USD reference). |
 | `ALLOW_MOCK_MARKET_DATA` | server | `true` to allow the mock provider in production (never recommended). Outside production the mock fills only pairs real providers could not supply. |
-| `CONTACT_EMAIL` | server | Where leads are emailed (when an email channel is configured). |
+| `CONTACT_EMAIL` | server | Where leads are emailed (when an email channel is configured). Falls back to `PUBLIC_CONTACT_EMAIL`, then `NEXT_PUBLIC_CONTACT_EMAIL`. |
 | `LEAD_WEBHOOK_URL` / `LEAD_WEBHOOK_SECRET` | server | Optional JSON webhook for leads (HMAC-SHA256 signature header). |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | server | Optional transactional email via Resend. |
 | `FORM_RATE_LIMIT_MAX` / `FORM_RATE_LIMIT_WINDOW_MS` / `FORM_MIN_FILL_TIME_MS` | server | Form abuse protection (a too-fast submission is delivered but flagged as suspicious; the honeypot is dropped silently). |
@@ -96,7 +98,8 @@ See `docs/ARCHITECTURE.md` and `docs/DESIGN.md` for the full contracts and the v
 ## Deployment notes
 
 * Any Node.js host that supports Next.js 16 (Vercel, a VPS with `npm run build && npm run start`, Docker).
-* Set `NEXT_PUBLIC_SITE_URL` to the public URL and `NEXT_PUBLIC_WHATSAPP_NUMBER` to the real number before building (public vars are inlined at build time).
+* Set `NEXT_PUBLIC_SITE_URL` to the public URL before building (public `NEXT_PUBLIC_*` vars are inlined at build time).
+* The WhatsApp number and the public e-mail are **runtime** values (`WHATSAPP_NUMBER`, `PUBLIC_CONTACT_EMAIL`): change them in the env file and restart the service — no rebuild. See `docs/DEPLOY-DEWAWEB.md` → "Mengganti nomor WhatsApp".
 * The in-memory rate limiter and market cache are per instance; for multi-instance deployments plug a shared store into `src/lib/security/rate-limit.ts` (documented seam).
 
 ## Decisions & known limitations

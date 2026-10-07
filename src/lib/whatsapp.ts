@@ -7,10 +7,14 @@ import type { Locale } from "@/lib/i18n/types";
 /**
  * The single WhatsApp utility: URL building + localized pre-filled messages.
  *
- * The number comes from `siteConfig.whatsappNumber` (NEXT_PUBLIC_WHATSAPP_NUMBER,
- * digits only). Nothing is hardcoded: when it is empty the site degrades to
- * the contact form (`buildWhatsAppUrl()` returns "#contact"). Templates come
- * from `t.whatsapp` so both languages stay in the dictionaries.
+ * The number is an explicit input: client components pass the RUNTIME value
+ * via `useWhatsApp()` (`<RuntimeConfigProvider>`, env read per request);
+ * when it is omitted the build-time `siteConfig.whatsappNumber`
+ * (NEXT_PUBLIC_WHATSAPP_NUMBER, digits only) is the fallback for pure callers.
+ * An explicit "" never falls back — it means "not configured". Nothing is
+ * hardcoded: without a number the site degrades to the contact form
+ * (`buildWhatsAppUrl()` returns "#contact"). Templates come from
+ * `t.whatsapp` so both languages stay in the dictionaries.
  *
  * Message layout produced by `buildExchangeInquiryMessage`:
  *
@@ -39,17 +43,19 @@ export interface ExchangeInquiryMessageOptions {
   reference?: string | null;
 }
 
-export function isWhatsAppConfigured(): boolean {
-  return siteConfig.whatsappNumber.length > 0;
+/** `number` omitted → the build-time `siteConfig.whatsappNumber`; "" → not configured. */
+export function isWhatsAppConfigured(number: string = siteConfig.whatsappNumber): boolean {
+  return number.length > 0;
 }
 
 /**
  * `https://wa.me/<digits>?text=<encoded message>`; without a message just the
  * chat link; "#contact" when WhatsApp is not configured so anchors still work.
+ * `number` omitted → the build-time `siteConfig.whatsappNumber`.
  */
-export function buildWhatsAppUrl(message?: string): string {
-  if (!isWhatsAppConfigured()) return WHATSAPP_FALLBACK_HREF;
-  const base = `${WHATSAPP_BASE_URL}${siteConfig.whatsappNumber}`;
+export function buildWhatsAppUrl(message?: string, number: string = siteConfig.whatsappNumber): string {
+  if (!isWhatsAppConfigured(number)) return WHATSAPP_FALLBACK_HREF;
+  const base = `${WHATSAPP_BASE_URL}${number}`;
   return message && message.length > 0 ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 

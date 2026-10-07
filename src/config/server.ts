@@ -76,8 +76,8 @@ export const serverConfig = {
   },
 
   leads: {
-    /** Where contact / exchange requests are delivered. */
-    contactEmail: env("CONTACT_EMAIL") ?? env("NEXT_PUBLIC_CONTACT_EMAIL"),
+    /** Where contact / exchange requests are delivered; falls back to the public contact e-mail. */
+    contactEmail: env("CONTACT_EMAIL") ?? env("PUBLIC_CONTACT_EMAIL") ?? env("NEXT_PUBLIC_CONTACT_EMAIL"),
     /** Optional JSON webhook (Slack/Telegram bridge/Zapier/CRM). */
     webhookUrl: env("LEAD_WEBHOOK_URL"),
     webhookSecret: env("LEAD_WEBHOOK_SECRET"),

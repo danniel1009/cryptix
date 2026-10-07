@@ -17,16 +17,12 @@ import {
   type ExchangePair,
   type PairId,
 } from "@/config/exchange";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { parseAmountInput } from "@/lib/i18n/format";
 import { useI18n } from "@/lib/i18n/provider";
 import { calculateReceive } from "@/lib/market/rates";
 import type { IndicativeRate, MarketSnapshot, MarketStatus } from "@/lib/market/types";
-import {
-  buildExchangeInquiryMessage,
-  buildGeneralInquiryMessage,
-  buildWhatsAppUrl,
-  isWhatsAppConfigured,
-} from "@/lib/whatsapp";
+import { buildExchangeInquiryMessage, buildGeneralInquiryMessage } from "@/lib/whatsapp";
 import type { ExchangeRequestPrefill } from "@/providers/ExchangeRequestProvider";
 import { useMarket, type MarketConnection } from "@/providers/MarketProvider";
 
@@ -341,14 +337,14 @@ export function useRateChecker(): RateCheckerState {
   );
   const prefill = useMemo(() => getPrefill(), [getPrefill]);
 
-  const whatsappConfigured = isWhatsAppConfigured();
+  const { configured: whatsappConfigured, url: whatsappUrl } = useWhatsApp();
   const whatsappHref = useMemo(() => {
-    if (!whatsappConfigured) return buildWhatsAppUrl();
+    if (!whatsappConfigured) return whatsappUrl();
     const message = amountValid
       ? buildExchangeInquiryMessage({ locale, pairId: pair.id, amount, estimatedReceive })
       : buildGeneralInquiryMessage(locale);
-    return buildWhatsAppUrl(message);
-  }, [whatsappConfigured, amountValid, locale, pair.id, amount, estimatedReceive]);
+    return whatsappUrl(message);
+  }, [whatsappConfigured, whatsappUrl, amountValid, locale, pair.id, amount, estimatedReceive]);
 
   return {
     from,

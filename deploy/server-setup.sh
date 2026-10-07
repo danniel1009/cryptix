@@ -25,9 +25,10 @@ NODE_ENV=production
 PORT=3000
 NEXT_PUBLIC_BRAND_NAME=Cryptix
 NEXT_PUBLIC_SITE_URL=https://$DOMAIN
-NEXT_PUBLIC_WHATSAPP_NUMBER=
-NEXT_PUBLIC_CONTACT_EMAIL=
 NEXT_PUBLIC_DEFAULT_LOCALE=en
+# Runtime contact details: edit + `systemctl restart cryptix-web`, no rebuild (non-digits are stripped)
+WHATSAPP_NUMBER=6282317600972
+PUBLIC_CONTACT_EMAIL=
 EXCHANGE_SPREAD=0.05
 MARKET_PROVIDERS=exchange,indodax,coingecko,tronscan
 CONTACT_EMAIL=

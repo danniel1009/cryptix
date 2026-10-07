@@ -10,12 +10,13 @@ import { LiveIndicator, type LiveIndicatorState } from "@/components/ui/LiveIndi
 import { REVEAL_EASE } from "@/components/ui/Reveal";
 import { Section } from "@/components/ui/Section";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { cn } from "@/lib/utils";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
 import type { MarketStatus } from "@/lib/market/types";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 import { useMarket, type MarketConnection } from "@/providers/MarketProvider";
 import { GlowLine } from "./hero/GlowLine";
 import { HeroBackground } from "./hero/HeroBackground";
@@ -71,8 +72,8 @@ export function Hero() {
   const reduced = useReducedMotionSafe();
 
   const indicator = deriveIndicator(status, connection, snapshot !== null, t);
-  const whatsappConfigured = isWhatsAppConfigured();
-  const whatsappHref = whatsappConfigured ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale)) : "#contact";
+  const { configured: whatsappConfigured, url: whatsappUrl } = useWhatsApp();
+  const whatsappHref = whatsappConfigured ? whatsappUrl(buildGeneralInquiryMessage(locale)) : "#contact";
 
   const scrollToSection = (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, id: string) => {
     event.preventDefault();

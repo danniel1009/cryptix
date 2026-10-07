@@ -5,9 +5,10 @@ import { useEffect, useRef } from "react";
 import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 
 export interface ContactSuccessProps {
   /** "CX-XXXXXX" returned by `/api/contact`. */
@@ -30,8 +31,9 @@ export function ContactSuccess({ reference, onReset }: ContactSuccessProps) {
   }, []);
 
   const referenceText = interpolate(t.contact.success.reference, { reference });
-  const whatsappHref = isWhatsAppConfigured()
-    ? buildWhatsAppUrl(`${buildGeneralInquiryMessage(locale)}\n\n${referenceText}`)
+  const whatsapp = useWhatsApp();
+  const whatsappHref = whatsapp.configured
+    ? whatsapp.url(`${buildGeneralInquiryMessage(locale)}\n\n${referenceText}`)
     : null;
 
   return (

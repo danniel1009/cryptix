@@ -1,3 +1,4 @@
+import { MarketHttpError } from "@/lib/market/http";
 import { PROVIDER_TIMEOUT_MS } from "@/config/market";
 import { describeError } from "@/lib/market/http";
 import { isUsableQuote } from "@/lib/market/rates";
@@ -37,6 +38,16 @@ export interface CompositeProviderOptions {
    * Defaults to 2.5 × PROVIDER_TIMEOUT_MS.
    */
   providerDeadlineMs?: number;
+  /**
+   * Extra attempts for TRANSIENT transport failures (network error / timeout),
+   * e.g. a brief burst of SYN loss on the host's upstream path. HTTP errors are
+   * never retried. Default 1 (two attempts in total).
+   */
+  transientRetries?: number;
+  /** Delay before a retry; jittered. Injectable for tests. */
+  retryDelayMs?: number;
+  /** Sleep implementation; injectable for tests. */
+  sleep?: (ms: number) => Promise<void>;
   /** Optional hook (e.g. logging) invoked for every recorded error. */
   onError?: (error: ProviderError) => void;
 }
@@ -59,11 +70,17 @@ export class CompositeProvider implements MarketDataProvider {
   private readonly providers: readonly MarketDataProvider[];
   private readonly deadlineMs: number;
   private readonly onError: ((error: ProviderError) => void) | undefined;
+  private readonly transientRetries: number;
+  private readonly retryDelayMs: number;
+  private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(providers: readonly MarketDataProvider[], options: CompositeProviderOptions = {}) {
     this.providers = providers;
     this.deadlineMs = options.providerDeadlineMs ?? PROVIDER_TIMEOUT_MS * 2.5;
     this.onError = options.onError;
+    this.transientRetries = Math.max(0, Math.trunc(options.transientRetries ?? 1));
+    this.retryDelayMs = Math.max(0, options.retryDelayMs ?? 400);
+    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }
 
   /** Provider names in chain order (for logs / diagnostics). */
@@ -173,7 +190,19 @@ export class CompositeProvider implements MarketDataProvider {
       // Called synchronously (inside the try) so a provider that throws
       // synchronously is isolated too, and an abort listener it registers is
       // in place before any caller can abort the outer signal.
-      const result = await Promise.race([provider.fetchQuotes(batch, controller.signal), deadlinePromise]);
+      const attempt = async (): Promise<MarketQuote[]> => {
+        for (let tries = 0; ; tries += 1) {
+          try {
+            return await provider.fetchQuotes(batch, controller.signal);
+          } catch (err) {
+            if (tries >= this.transientRetries || controller.signal.aborted || !isTransientError(err)) throw err;
+            // jittered pause so a burst of SYN loss has a chance to clear
+            await this.sleep(this.retryDelayMs + Math.floor(Math.random() * 200));
+            if (controller.signal.aborted) throw err;
+          }
+        }
+      };
+      const result = await Promise.race([attempt(), deadlinePromise]);
       if (!Array.isArray(result)) throw new Error("Provider returned a non-array result");
 
       const requested = new Set(batch.map((r) => pairKey(r.base, r.quote)));
@@ -199,4 +228,13 @@ export class CompositeProvider implements MarketDataProvider {
       deadlinePromise.catch(() => {});
     }
   }
+}
+
+/** Transport-level failures worth one retry: our own network/timeout kinds or raw socket errors. */
+export function isTransientError(err: unknown): boolean {
+  if (err instanceof MarketHttpError) return err.kind === "network" || err.kind === "timeout";
+  const code = (err as { cause?: { code?: string }; code?: string })?.cause?.code ?? (err as { code?: string })?.code;
+  if (typeof code === "string" && /^(ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENETUNREACH|EHOSTUNREACH|EPIPE)$/.test(code)) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  return /network error|timed out|fetch failed/i.test(msg);
 }

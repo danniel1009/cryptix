@@ -8,9 +8,10 @@ import { Logo } from "@/components/ui/Logo";
 import { DEFAULT_EXCHANGE_SPREAD } from "@/config/exchange";
 import { siteConfig } from "@/config/site";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
+import { useContactEmail, useWhatsApp } from "@/hooks/useWhatsApp";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 import { useMarket } from "@/providers/MarketProvider";
 
 const COLUMN_TITLE = "font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-faint";
@@ -27,10 +28,9 @@ export function Footer() {
   const scrollTo = useSmoothScrollTo();
 
   const spread = formatSpread(snapshot?.spread ?? DEFAULT_EXCHANGE_SPREAD);
-  const whatsappHref = isWhatsAppConfigured()
-    ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale))
-    : null;
-  const email = siteConfig.contactEmail;
+  const whatsapp = useWhatsApp();
+  const whatsappHref = whatsapp.configured ? whatsapp.url(buildGeneralInquiryMessage(locale)) : null;
+  const email = useContactEmail();
   const vars = { spread, brand: siteConfig.name, year: siteConfig.copyrightYear };
 
   return (

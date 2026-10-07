@@ -6,13 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useI18n } from "@/lib/i18n/provider";
-import {
-  buildExchangeInquiryMessage,
-  buildGeneralInquiryMessage,
-  buildWhatsAppUrl,
-  isWhatsAppConfigured,
-} from "@/lib/whatsapp";
+import { buildExchangeInquiryMessage, buildGeneralInquiryMessage } from "@/lib/whatsapp";
 import { useExchangeRequest, type ExchangeRequestPrefill } from "@/providers/ExchangeRequestProvider";
 import { ExchangeRequestForm } from "./ExchangeRequestForm";
 import { ExchangeRequestSuccess } from "./ExchangeRequestSuccess";
@@ -57,11 +53,11 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
   const scrollTo = useSmoothScrollTo();
   const { success, submitting, values, amount, estimate } = form;
 
-  const whatsappConfigured = isWhatsAppConfigured();
+  const { configured: whatsappConfigured, url: whatsappUrl } = useWhatsApp();
 
-  /** Success: the same request, now with its reference. */
+  /** Success: the same request, now with its reference ("#contact" when unconfigured). */
   const successWhatsappHref = success
-    ? buildWhatsAppUrl(
+    ? whatsappUrl(
         buildExchangeInquiryMessage({
           locale,
           pairId: success.pairId,
@@ -79,7 +75,7 @@ function ExchangeRequestDialog({ open, prefill, onClose }: ExchangeRequestDialog
    */
   const hasAmount = Number.isFinite(amount) && amount > 0;
   const formWhatsappHref = whatsappConfigured
-    ? buildWhatsAppUrl(
+    ? whatsappUrl(
         hasAmount
           ? buildExchangeInquiryMessage({ locale, pairId: values.pairId, amount, estimatedReceive: estimate })
           : buildGeneralInquiryMessage(locale),

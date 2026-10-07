@@ -5,14 +5,10 @@ import type { MouseEvent } from "react";
 import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
 import { Button } from "@/components/ui/Button";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
-import {
-  buildGeneralInquiryMessage,
-  buildWhatsAppUrl,
-  isWhatsAppConfigured,
-  WHATSAPP_FALLBACK_HREF,
-} from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage, WHATSAPP_FALLBACK_HREF } from "@/lib/whatsapp";
 import { useExchangeRequest } from "@/providers/ExchangeRequestProvider";
 
 export interface FaqCtaProps {
@@ -34,10 +30,8 @@ export function FaqCta({ className }: FaqCtaProps) {
   const { open } = useExchangeRequest();
   const scrollTo = useSmoothScrollTo();
 
-  const configured = isWhatsAppConfigured();
-  const whatsappHref = configured
-    ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale))
-    : WHATSAPP_FALLBACK_HREF;
+  const { configured, url } = useWhatsApp();
+  const whatsappHref = configured ? url(buildGeneralInquiryMessage(locale)) : WHATSAPP_FALLBACK_HREF;
 
   const onFallbackClick = (event: MouseEvent<HTMLAnchorElement>) => {
     // Smooth-scroll when the contact section is on the page; otherwise let the

@@ -7,7 +7,8 @@ import type { IndicativeRate, MarketQuote, MarketSnapshot } from "@/lib/market/t
 const site = vi.hoisted(() => ({
   name: "Cryptix",
   url: "http://localhost:3000",
-  whatsappNumber: "6281234567890",
+  // Build-time fallbacks stay EMPTY: the runtime number must come from <RuntimeConfigProvider> alone.
+  whatsappNumber: "",
   contactEmail: "",
   defaultLocale: "en" as const,
   copyrightYear: 2026,
@@ -40,6 +41,7 @@ import {
 } from "@/components/sections/rate-checker/useRateChecker";
 import { AMOUNT_LIMITS, CURRENCIES, SUPPORTED_PAIRS, findReversePair, getPairById } from "@/config/exchange";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 import type { Locale } from "@/lib/i18n/types";
 import { calculateReceive, computeIndicativeRates } from "@/lib/market/rates";
 
@@ -78,14 +80,21 @@ function setMarket(overrides: Partial<MarketContextValue> = {}) {
   };
 }
 
+/** Runtime contact config under test control — set before rendering, read by <RuntimeConfigProvider>. */
+const runtime: RuntimePublicConfig = { whatsappNumber: "6281234567890", contactEmail: "" };
+
 function renderChecker(locale: Locale = "en") {
   return renderHook(() => useRateChecker(), {
-    wrapper: ({ children }) => <I18nProvider initialLocale={locale}>{children}</I18nProvider>,
+    wrapper: ({ children }) => (
+      <I18nProvider initialLocale={locale}>
+        <RuntimeConfigProvider value={runtime}>{children}</RuntimeConfigProvider>
+      </I18nProvider>
+    ),
   });
 }
 
 beforeEach(() => {
-  site.whatsappNumber = "6281234567890";
+  runtime.whatsappNumber = "6281234567890";
   setMarket();
   window.history.replaceState(null, "", "/");
 });
@@ -475,7 +484,7 @@ describe("useRateChecker", () => {
     expect(message).toContain("Hello Cryptix");
     expect(message).not.toContain("Pair:");
 
-    site.whatsappNumber = "";
+    runtime.whatsappNumber = "";
     const { result: unconfigured } = renderChecker();
     expect(unconfigured.current.whatsappConfigured).toBe(false);
     expect(unconfigured.current.whatsappHref).toBe("#contact");

@@ -18,6 +18,7 @@ import {
   type ExchangeRequestPrefill,
 } from "@/providers/ExchangeRequestProvider";
 import type { MarketConnection, MarketContextValue } from "@/providers/MarketProvider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                               */
@@ -25,11 +26,8 @@ import type { MarketConnection, MarketContextValue } from "@/providers/MarketPro
 
 vi.mock("@/lib/api/client", () => ({ submitExchangeRequest: vi.fn() }));
 
-// The WhatsApp CTA needs a configured number; tests never read .env.local.
-vi.mock("@/config/site", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("@/config/site")>();
-  return { ...mod, siteConfig: { ...mod.siteConfig, whatsappNumber: "6281234567890" } };
-});
+/** The WhatsApp CTAs need a configured number: the RUNTIME value from <RuntimeConfigProvider>, never the env. */
+const RUNTIME: RuntimePublicConfig = { whatsappNumber: "6281234567890", contactEmail: "" };
 
 /** Swapped per test; read lazily by the mocked `useMarket`. */
 const market = vi.hoisted(() => ({ value: null as unknown }));
@@ -134,10 +132,12 @@ function Probe() {
 function renderHarness(locale: Locale = "en") {
   return render(
     <I18nProvider initialLocale={locale}>
-      <ExchangeRequestProvider>
-        <Probe />
-        <ExchangeRequestModal />
-      </ExchangeRequestProvider>
+      <RuntimeConfigProvider value={RUNTIME}>
+        <ExchangeRequestProvider>
+          <Probe />
+          <ExchangeRequestModal />
+        </ExchangeRequestProvider>
+      </RuntimeConfigProvider>
     </I18nProvider>,
   );
 }
@@ -681,7 +681,7 @@ describe("ExchangeRequestModal", () => {
     expect(screen.queryByText(en.exchangeRequest.prefillNote)).not.toBeInTheDocument();
     // No amount yet: the WhatsApp CTA opens a general inquiry rather than "Amount: —".
     const href = screen.getByRole("link", { name: en.exchangeRequest.chatWhatsApp }).getAttribute("href") ?? "";
-    expect(href).toBe(buildWhatsAppUrl(buildGeneralInquiryMessage("en")));
+    expect(href).toBe(buildWhatsAppUrl(buildGeneralInquiryMessage("en"), RUNTIME.whatsappNumber));
     expect(href).not.toContain(encodeURIComponent("USDT → BTC"));
   });
 

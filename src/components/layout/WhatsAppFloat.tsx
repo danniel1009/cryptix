@@ -4,9 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 
 /**
  * Original chat glyph (speech bubble + handset). Deliberately NOT the
@@ -42,8 +43,8 @@ export function WhatsAppFloat() {
   const scrollTo = useSmoothScrollTo();
   const [expanded, setExpanded] = useState(false);
 
-  const configured = isWhatsAppConfigured();
-  const href = configured ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale)) : "#contact";
+  const { configured, url } = useWhatsApp();
+  const href = configured ? url(buildGeneralInquiryMessage(locale)) : "#contact";
 
   return (
     <div className="fixed bottom-safe right-safe z-40 flex items-center gap-3">

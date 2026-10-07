@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { SkipLink } from "@/components/layout/SkipLink";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
+import { getRuntimePublicConfig } from "@/config/runtime.server";
 import { serverConfig } from "@/config/server";
 import { siteConfig } from "@/config/site";
 import { interpolate } from "@/lib/i18n/dictionaries";
@@ -15,6 +16,7 @@ import { INTL_LOCALES, type Locale } from "@/lib/i18n/types";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { ExchangeRequestProvider } from "@/providers/ExchangeRequestProvider";
 import { MarketProvider } from "@/providers/MarketProvider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -89,9 +91,10 @@ export const viewport: Viewport = {
 
 /**
  * JSON-LD built ONLY from config + dictionary (no user input). `<` is escaped
- * so the payload can never close the script tag.
+ * so the payload can never close the script tag. Contact details are the
+ * RUNTIME values (env per request), the same ones the client tree receives.
  */
-function buildJsonLd(locale: Locale, description: string): string {
+function buildJsonLd(locale: Locale, description: string, contact: RuntimePublicConfig): string {
   const base = resolveMetadataBase().origin;
   const organization: Record<string, unknown> = {
     "@type": "Organization",
@@ -100,13 +103,13 @@ function buildJsonLd(locale: Locale, description: string): string {
     url: base,
     logo: `${base}/icon.svg`,
   };
-  if (siteConfig.contactEmail) organization.email = siteConfig.contactEmail;
-  if (siteConfig.whatsappNumber) {
+  if (contact.contactEmail) organization.email = contact.contactEmail;
+  if (contact.whatsappNumber) {
     organization.contactPoint = [
       {
         "@type": "ContactPoint",
         contactType: "customer support",
-        url: `https://wa.me/${siteConfig.whatsappNumber}`,
+        url: `https://wa.me/${contact.whatsappNumber}`,
         availableLanguage: ["en", "id"],
       },
     ];
@@ -129,9 +132,12 @@ function buildJsonLd(locale: Locale, description: string): string {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { locale, t } = await getServerDictionary();
+  // Dynamic per request (cookies above), so the env is re-read on every render: edit + restart, no rebuild.
+  const runtimeConfig = getRuntimePublicConfig();
   const jsonLd = buildJsonLd(
     locale,
     interpolate(t.seo.description, { brand: siteConfig.name, spread: formatSpread(locale, serverConfig.exchange.spread) }),
+    runtimeConfig,
   );
 
   return (
@@ -139,17 +145,19 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="flex min-h-full flex-col bg-bg text-fg antialiased">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
         <I18nProvider initialLocale={locale}>
-          <MarketProvider>
-            <ExchangeRequestProvider>
-              <SkipLink />
-              <Navbar />
-              <main id="main" className="flex-1">
-                {children}
-              </main>
-              <Footer />
-              <WhatsAppFloat />
-            </ExchangeRequestProvider>
-          </MarketProvider>
+          <RuntimeConfigProvider value={runtimeConfig}>
+            <MarketProvider>
+              <ExchangeRequestProvider>
+                <SkipLink />
+                <Navbar />
+                <main id="main" className="flex-1">
+                  {children}
+                </main>
+                <Footer />
+                <WhatsAppFloat />
+              </ExchangeRequestProvider>
+            </MarketProvider>
+          </RuntimeConfigProvider>
         </I18nProvider>
       </body>
     </html>

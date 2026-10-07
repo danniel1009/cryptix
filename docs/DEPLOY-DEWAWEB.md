@@ -37,7 +37,17 @@ curl -sI https://<domain>/ | grep -i strict-transport   # header keamanan
 Log: `journalctl -u cryptix-web -f`. Lead yang masuk terlihat di log sebagai `[lead] delivered …` (teks lengkap hanya di development; di produksi wajib ada `LEAD_WEBHOOK_URL` atau Resend, kalau tidak API menjawab `delivery_failed`).
 
 ## 4. Variabel `.env.production` yang wajib
-`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_CONTACT_EMAIL`, `CONTACT_EMAIL`, dan salah satu channel lead (`LEAD_WEBHOOK_URL` atau `RESEND_API_KEY` + `RESEND_FROM_EMAIL`). `TRUSTED_PROXY_HOPS=1` karena nginx ada di depan aplikasi. Variabel `NEXT_PUBLIC_*` di-inline saat build: setelah mengubahnya, jalankan `npm run deploy` lagi.
+`NEXT_PUBLIC_SITE_URL`, `WHATSAPP_NUMBER`, `PUBLIC_CONTACT_EMAIL`, `CONTACT_EMAIL`, dan salah satu channel lead (`LEAD_WEBHOOK_URL` atau `RESEND_API_KEY` + `RESEND_FROM_EMAIL`). `TRUSTED_PROXY_HOPS=1` karena nginx ada di depan aplikasi. Variabel `NEXT_PUBLIC_*` di-inline saat build: setelah mengubahnya, jalankan `npm run deploy` lagi. **Kecuali** nomor WhatsApp dan email kontak — keduanya dibaca saat runtime (bagian 5), jadi `NEXT_PUBLIC_WHATSAPP_NUMBER` / `NEXT_PUBLIC_CONTACT_EMAIL` tidak perlu diisi.
+
+## 5. Mengganti nomor WhatsApp (atau email kontak)
+Tidak perlu deploy, tidak perlu build. Server membaca `WHATSAPP_NUMBER` (dan `PUBLIC_CONTACT_EMAIL`) pada **setiap request** dan meneruskannya ke halaman, jadi semua tombol/link WhatsApp (hero, footer, menu mobile, FAQ, kontak, rate checker, modal request, tombol melayang) ikut berubah sekaligus:
+```bash
+ssh -i ~/.ssh/cryptix_vps root@<IP>
+nano /opt/cryptix/.env.production      # ubah baris: WHATSAPP_NUMBER=6282317600972
+systemctl restart cryptix-web          # ≈3 detik, lalu service melayani lagi
+curl -s https://<domain>/ | grep -o 'wa.me/[0-9]*' | head -1   # verifikasi → wa.me/6282317600972
+```
+Format bebas: `+62 823-1760-0972` juga diterima (semua selain digit dibuang) dan menghasilkan `https://wa.me/6282317600972`. Kosongkan nilainya untuk menyembunyikan tombol WhatsApp — semua CTA jatuh ke form kontak, tidak ada link mati. Email kontak publik diganti dengan cara yang sama lewat `PUBLIC_CONTACT_EMAIL` (kosong = tidak ditampilkan).
 
 ## Alternatif: shared hosting cPanel (DewaWeb "Node.js App")
 1. Setup Node.js App di cPanel: Node 20+, application root `cryptix`, startup file `server.js` (buat: `require("next/dist/server/lib/start-server")` tidak diperlukan — cukup `const { spawn } = require("child_process"); spawn("npx", ["next", "start", "-p", process.env.PORT], { stdio: "inherit" });`).

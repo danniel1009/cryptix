@@ -9,30 +9,19 @@ import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/types";
 import { computeIndicativeRates } from "@/lib/market/rates";
 import type { MarketQuote, MarketSnapshot } from "@/lib/market/types";
 import type { MarketContextValue } from "@/providers/MarketProvider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                               */
 /* ------------------------------------------------------------------ */
 
 const mocks = vi.hoisted(() => ({
-  /** Mutable so each test can pick the WhatsApp configuration. */
-  site: { whatsappNumber: "" },
   /** Set per test before rendering; read lazily by the mocked hook. */
   market: { value: null as MarketContextValue | null },
 }));
 
-vi.mock("@/config/site", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/config/site")>();
-  return {
-    ...actual,
-    siteConfig: {
-      ...actual.siteConfig,
-      get whatsappNumber() {
-        return mocks.site.whatsappNumber;
-      },
-    },
-  };
-});
+/** Runtime contact config under test control — set before rendering, read by <RuntimeConfigProvider>. */
+const runtime: RuntimePublicConfig = { whatsappNumber: "", contactEmail: "" };
 
 vi.mock("@/providers/MarketProvider", () => ({
   useMarket: () => {
@@ -98,11 +87,13 @@ function LocaleProbe() {
 function renderHero(initialLocale: Locale = "en") {
   return render(
     <I18nProvider initialLocale={initialLocale}>
-      <Hero />
-      <LocaleProbe />
-      {/* Scroll targets the CTAs point at. */}
-      <div id="exchange" />
-      <div id="contact" />
+      <RuntimeConfigProvider value={runtime}>
+        <Hero />
+        <LocaleProbe />
+        {/* Scroll targets the CTAs point at. */}
+        <div id="exchange" />
+        <div id="contact" />
+      </RuntimeConfigProvider>
     </I18nProvider>,
   );
 }
@@ -110,7 +101,7 @@ function renderHero(initialLocale: Locale = "en") {
 const heading = () => screen.getByRole("heading", { level: 1 });
 
 beforeEach(() => {
-  mocks.site.whatsappNumber = "";
+  runtime.whatsappNumber = "";
   mocks.market.value = marketValue();
   document.cookie = `${LOCALE_COOKIE}=; path=/; max-age=0`;
   window.location.hash = "";
@@ -208,7 +199,7 @@ describe("Hero — primary CTA", () => {
 
 describe("Hero — secondary CTA", () => {
   it("links to wa.me with the localized general inquiry when WhatsApp is configured", () => {
-    mocks.site.whatsappNumber = "6281234567890";
+    runtime.whatsappNumber = "6281234567890";
     renderHero();
     const cta = screen.getByRole("link", { name: en.hero.ctaSecondary });
     const href = cta.getAttribute("href") ?? "";
@@ -221,7 +212,7 @@ describe("Hero — secondary CTA", () => {
   });
 
   it("uses the Indonesian message after switching locale", async () => {
-    mocks.site.whatsappNumber = "6281234567890";
+    runtime.whatsappNumber = "6281234567890";
     const user = userEvent.setup();
     renderHero();
     await user.click(screen.getByRole("button", { name: "probe-switch-to-id" }));
@@ -231,7 +222,7 @@ describe("Hero — secondary CTA", () => {
   });
 
   it("falls back to #contact (same tab, scrolls) when WhatsApp is not configured", async () => {
-    mocks.site.whatsappNumber = "";
+    runtime.whatsappNumber = "";
     const user = userEvent.setup();
     renderHero();
     const cta = screen.getByRole("link", { name: en.hero.ctaSecondary });

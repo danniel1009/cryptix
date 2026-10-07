@@ -8,6 +8,7 @@ import { en } from "@/lib/i18n/dictionaries/en";
 import { id } from "@/lib/i18n/dictionaries/id";
 import { I18nProvider } from "@/lib/i18n/provider";
 import type { Locale } from "@/lib/i18n/types";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                               */
@@ -17,21 +18,10 @@ vi.mock("@/lib/api/client", () => ({ submitContact: vi.fn() }));
 const submitMock = vi.mocked(submitContact);
 
 /**
- * `siteConfig` reads NEXT_PUBLIC_* at import time. A Proxy lets each test
- * decide whether WhatsApp / email are configured without touching the env.
+ * WhatsApp / e-mail are RUNTIME values from <RuntimeConfigProvider>: each test
+ * sets them before rendering, independent of the env.
  */
-const siteState = vi.hoisted(() => ({ whatsappNumber: "", contactEmail: "" }));
-vi.mock("@/config/site", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/config/site")>();
-  const siteConfig = new Proxy(actual.siteConfig, {
-    get(target, prop, receiver) {
-      if (prop === "whatsappNumber") return siteState.whatsappNumber;
-      if (prop === "contactEmail") return siteState.contactEmail;
-      return Reflect.get(target, prop, receiver);
-    },
-  });
-  return { ...actual, siteConfig };
-});
+const runtime: RuntimePublicConfig = { whatsappNumber: "", contactEmail: "" };
 
 /** jsdom has no IntersectionObserver; framer's `whileInView` needs one. Everything is "in view". */
 class IntersectionObserverStub {
@@ -59,8 +49,8 @@ afterAll(() => {
 
 beforeEach(() => {
   submitMock.mockReset();
-  siteState.whatsappNumber = "";
-  siteState.contactEmail = "";
+  runtime.whatsappNumber = "";
+  runtime.contactEmail = "";
 });
 
 /* ------------------------------------------------------------------ */
@@ -70,7 +60,9 @@ beforeEach(() => {
 function renderContact(locale: Locale = "en") {
   return render(
     <I18nProvider initialLocale={locale}>
-      <Contact />
+      <RuntimeConfigProvider value={runtime}>
+        <Contact />
+      </RuntimeConfigProvider>
     </I18nProvider>,
   );
 }
@@ -123,8 +115,8 @@ describe("Contact section", () => {
   });
 
   it("links WhatsApp (general message, new tab) and the email address when configured", () => {
-    siteState.whatsappNumber = "6281234567890";
-    siteState.contactEmail = "desk@example.com";
+    runtime.whatsappNumber = "6281234567890";
+    runtime.contactEmail = "desk@example.com";
     renderContact();
 
     const whatsapp = screen.getByRole("link", { name: en.contact.whatsappLabel });
@@ -328,7 +320,7 @@ describe("Contact form", () => {
   });
 
   it("offers a WhatsApp link carrying the reference on success when configured", async () => {
-    siteState.whatsappNumber = "6281234567890";
+    runtime.whatsappNumber = "6281234567890";
     const user = userEvent.setup();
     submitMock.mockResolvedValue({ ok: true, reference: "CX-REF999" });
     renderContact();

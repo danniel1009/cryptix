@@ -14,6 +14,7 @@ import { computeIndicativeRates } from "@/lib/market/rates";
 import type { MarketQuote, MarketSnapshot } from "@/lib/market/types";
 import { ExchangeRequestProvider, useExchangeRequest } from "@/providers/ExchangeRequestProvider";
 import type { MarketContextValue } from "@/providers/MarketProvider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 
 /* ------------------------------------------------------------------ */
 /* Fixtures                                                            */
@@ -58,21 +59,8 @@ vi.mock("@/providers/MarketProvider", () => ({
   MarketProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
-/** WhatsApp number under test control (env-independent). */
-const siteState = { whatsappNumber: "" };
-
-vi.mock("@/config/site", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/config/site")>();
-  return {
-    ...actual,
-    siteConfig: {
-      ...actual.siteConfig,
-      get whatsappNumber() {
-        return siteState.whatsappNumber;
-      },
-    },
-  };
-});
+/** Runtime contact config under test control — set before rendering, read by <RuntimeConfigProvider>. */
+const runtime: RuntimePublicConfig = { whatsappNumber: "", contactEmail: "" };
 
 /* ------------------------------------------------------------------ */
 /* Environment                                                         */
@@ -111,7 +99,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockMarket.snapshot = makeSnapshot();
-  siteState.whatsappNumber = "";
+  runtime.whatsappNumber = "";
   document.cookie = `${LOCALE_COOKIE}=; path=/; max-age=0`;
 });
 
@@ -138,11 +126,13 @@ function LocaleSwitch() {
 function renderFaq() {
   return render(
     <I18nProvider initialLocale="en">
-      <ExchangeRequestProvider>
-        <Faq />
-        <ModalProbe />
-        <LocaleSwitch />
-      </ExchangeRequestProvider>
+      <RuntimeConfigProvider value={runtime}>
+        <ExchangeRequestProvider>
+          <Faq />
+          <ModalProbe />
+          <LocaleSwitch />
+        </ExchangeRequestProvider>
+      </RuntimeConfigProvider>
     </I18nProvider>,
   );
 }
@@ -284,7 +274,7 @@ describe("Faq section", () => {
   });
 
   it("WhatsApp CTA opens wa.me with the localised general inquiry when configured", () => {
-    siteState.whatsappNumber = "6281234567890";
+    runtime.whatsappNumber = "6281234567890";
     renderFaq();
     const link = screen.getByRole("link", { name: en.common.chatOnWhatsApp });
     const href = link.getAttribute("href") ?? "";

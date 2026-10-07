@@ -155,3 +155,29 @@ describe("buildWhatsAppUrl", () => {
     expect(isWhatsAppConfigured()).toBe(true);
   });
 });
+
+describe("explicit number argument (the runtime value a client passes via useWhatsApp)", () => {
+  it("buildWhatsAppUrl(message, number) uses the given number, not siteConfig", () => {
+    expect(site.whatsappNumber).toBe("6281234567890"); // precondition: the fallback differs
+    expect(buildWhatsAppUrl("hello", "6282317600972")).toBe("https://wa.me/6282317600972?text=hello");
+    expect(buildWhatsAppUrl(undefined, "6282317600972")).toBe("https://wa.me/6282317600972");
+    expect(buildWhatsAppUrl("", "6282317600972")).toBe("https://wa.me/6282317600972");
+    expect(buildWhatsAppUrl(EN_WITH_REFERENCE, "6282317600972")).toBe(
+      `https://wa.me/6282317600972?text=${encodeURIComponent(EN_WITH_REFERENCE)}`,
+    );
+  });
+
+  it("an explicit empty number means 'not configured' even though siteConfig has one", () => {
+    expect(site.whatsappNumber).toBe("6281234567890");
+    expect(isWhatsAppConfigured("")).toBe(false);
+    expect(buildWhatsAppUrl("hello", "")).toBe(WHATSAPP_FALLBACK_HREF);
+    expect(buildWhatsAppUrl(undefined, "")).toBe(WHATSAPP_FALLBACK_HREF);
+  });
+
+  it("isWhatsAppConfigured(number) judges the given number; omitted → siteConfig", () => {
+    site.whatsappNumber = "";
+    expect(isWhatsAppConfigured("6282317600972")).toBe(true);
+    expect(isWhatsAppConfigured()).toBe(false);
+    expect(buildWhatsAppUrl("x", "6282317600972")).toBe("https://wa.me/6282317600972?text=x");
+  });
+});

@@ -1,4 +1,5 @@
 /** @vitest-environment node */
+import { MarketHttpError } from "@/lib/market/http";
 import { describe, expect, it, vi } from "vitest";
 import { CompositeProvider } from "@/lib/market/providers/composite";
 import { MockProvider } from "@/lib/market/providers/mock";
@@ -192,5 +193,47 @@ describe("MockProvider", () => {
     }
     expect(a.supports("BTC", "USDT")).toBe(true);
     expect(a.supports("IDR", "BTC")).toBe(false);
+  });
+});
+
+describe("CompositeProvider — transient retries", () => {
+  const q = (base: MarketSymbol, quote: MarketSymbol, price: number): MarketQuote => ({
+    base, quote, price, change24hPct: null, updatedAt: "2026-10-07T07:00:00.000Z", source: "flaky",
+  });
+  function flaky(failures: number, error: unknown): MarketDataProvider & { calls: number } {
+    const p = {
+      name: "flaky",
+      calls: 0,
+      supports: () => true,
+      async fetchQuotes() {
+        p.calls += 1;
+        if (p.calls <= failures) throw error;
+        return [q("USDT", "IDR", 16485)];
+      },
+    };
+    return p;
+  }
+  it("retries one transient network failure and then succeeds without recording an error", async () => {
+    const provider = flaky(1, new MarketHttpError("network", "Network error: https://indodax.com/api/summaries", { url: "https://indodax.com/api/summaries" }));
+    const c = new CompositeProvider([provider], { sleep: async () => {}, retryDelayMs: 0 });
+    const { quotes, errors } = await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(provider.calls).toBe(2);
+    expect(quotes.map((x) => x.price)).toEqual([16485]);
+    expect(errors).toEqual([]);
+  });
+  it("gives up after the configured retries and records the error", async () => {
+    const provider = flaky(5, Object.assign(new Error("fetch failed"), { cause: { code: "ETIMEDOUT" } }));
+    const c = new CompositeProvider([provider], { sleep: async () => {}, retryDelayMs: 0, transientRetries: 2 });
+    const { quotes, errors } = await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(provider.calls).toBe(3);
+    expect(quotes).toEqual([]);
+    expect(errors).toHaveLength(1);
+  });
+  it("never retries HTTP errors", async () => {
+    const provider = flaky(1, new MarketHttpError("http", "HTTP 429", { url: "https://indodax.com/api/summaries", status: 429 }));
+    const c = new CompositeProvider([provider], { sleep: async () => {}, retryDelayMs: 0 });
+    const { errors } = await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(provider.calls).toBe(1);
+    expect(errors).toHaveLength(1);
   });
 });

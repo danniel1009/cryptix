@@ -11,7 +11,8 @@ import type { IndicativeRate, MarketQuote, MarketSnapshot, MarketStatus } from "
 const site = vi.hoisted(() => ({
   name: "Cryptix",
   url: "http://localhost:3000",
-  whatsappNumber: "6281234567890",
+  // Build-time fallbacks stay EMPTY: the runtime number must come from <RuntimeConfigProvider> alone.
+  whatsappNumber: "",
   contactEmail: "",
   defaultLocale: "en" as const,
   copyrightYear: 2026,
@@ -41,6 +42,7 @@ import { id as idDict } from "@/lib/i18n/dictionaries/id";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { formatAmount, formatPrice, formatRelativeTime, formatTime } from "@/lib/i18n/format";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { RuntimeConfigProvider, type RuntimePublicConfig } from "@/providers/RuntimeConfigProvider";
 import type { Locale } from "@/lib/i18n/types";
 import { calculateReceive, computeIndicativeRates } from "@/lib/market/rates";
 import {
@@ -116,13 +118,18 @@ function Probe() {
   );
 }
 
+/** Runtime contact config under test control — set before rendering, read by <RuntimeConfigProvider>. */
+const runtime: RuntimePublicConfig = { whatsappNumber: "6281234567890", contactEmail: "" };
+
 function renderChecker(locale: Locale = "en") {
   return render(
     <I18nProvider initialLocale={locale}>
-      <ExchangeRequestProvider>
-        <RateChecker />
-        <Probe />
-      </ExchangeRequestProvider>
+      <RuntimeConfigProvider value={runtime}>
+        <ExchangeRequestProvider>
+          <RateChecker />
+          <Probe />
+        </ExchangeRequestProvider>
+      </RuntimeConfigProvider>
     </I18nProvider>,
   );
 }
@@ -181,7 +188,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  site.whatsappNumber = "6281234567890";
+  runtime.whatsappNumber = "6281234567890";
   setMarket();
 });
 
@@ -678,7 +685,7 @@ describe("RateChecker — actions", () => {
   });
 
   it("falls back to #contact when WhatsApp is not configured", () => {
-    site.whatsappNumber = "";
+    runtime.whatsappNumber = "";
     renderChecker();
     const link = screen.getByRole("link", { name: en.rateChecker.chatOnWhatsApp });
     expect(link).toHaveAttribute("href", "#contact");

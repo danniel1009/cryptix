@@ -13,8 +13,9 @@ import { siteConfig } from "@/config/site";
 import { useLockBodyScroll } from "@/hooks/useLockBodyScroll";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useI18n } from "@/lib/i18n/provider";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 import { useExchangeRequest } from "@/providers/ExchangeRequestProvider";
 
 export interface MobileMenuProps {
@@ -40,9 +41,8 @@ export function MobileMenu({ id, open, onClose }: MobileMenuProps) {
   useLockBodyScroll(open);
   useFocusTrap(panelRef, open, { onEscape: onClose });
 
-  const whatsappHref = isWhatsAppConfigured()
-    ? buildWhatsAppUrl(buildGeneralInquiryMessage(locale))
-    : null;
+  const whatsapp = useWhatsApp();
+  const whatsappHref = whatsapp.configured ? whatsapp.url(buildGeneralInquiryMessage(locale)) : null;
 
   /** Close first (releases the scroll lock), then scroll on the next frames. */
   const navigate = (sectionId: string) => {

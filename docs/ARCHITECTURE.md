@@ -29,7 +29,8 @@ src/
     api/contact/route.ts       POST → contact message
     api/exchange-request/route.ts POST → exchange request
   config/
-    site.ts        brand name, URLs, WhatsApp number, contact email, default locale, NAV_ITEMS
+    site.ts        brand name, URLs, default locale, NAV_ITEMS; BUILD-TIME fallbacks for WhatsApp number / contact email
+    runtime.server.ts server-only: getRuntimePublicConfig() → RUNTIME WhatsApp number + public e-mail (env read per request)
     exchange.ts    CURRENCIES, SUPPORTED_PAIRS (the ONLY 4 pairs), DEFAULT_EXCHANGE_SPREAD, limits
     market.ts      public timing constants (refresh/stale/unavailable thresholds)
     server.ts      server-only: env-backed secrets, spread, provider chain, lead delivery, limits
@@ -44,7 +45,8 @@ src/
   providers/
     ExchangeRequestProvider.tsx  modal state + prefill (DONE)
     MarketProvider.tsx           client market feed context (useMarket)
-  hooks/                     client hooks (useMarketFeed, useScrollSpy, useMediaQuery …)
+    RuntimeConfigProvider.tsx    runtime contact config from the layout (useRuntimeConfig)
+  hooks/                     client hooks (useWhatsApp / useContactEmail, useMarketFeed, useScrollSpy, useMediaQuery …)
   components/
     ui/                      primitives: Button, Card, Badge, Input, Select, Textarea, Checkbox,
                              Section, Container, Eyebrow, Reveal, AnimatedNumber, LiveIndicator,
@@ -58,7 +60,8 @@ src/
 ## Fixed contracts (already written — build against these, do not change signatures)
 
 ### Config
-- `siteConfig` (`@/config/site`): `name`, `url`, `whatsappNumber` (digits only, may be ""), `contactEmail`, `defaultLocale`, `copyrightYear`, `nav` (NAV_ITEMS: `{id, href}`; label = `t.nav[id]`).
+- `siteConfig` (`@/config/site`): `name`, `url`, `whatsappNumber` (digits only, may be ""), `contactEmail`, `defaultLocale`, `copyrightYear`, `nav` (NAV_ITEMS: `{id, href}`; label = `t.nav[id]`). `whatsappNumber` / `contactEmail` here are the **build-time fallbacks** (NEXT_PUBLIC_*); no client component reads them directly (see Runtime contact config).
+- **Runtime contact config** — `getRuntimePublicConfig()` (`@/config/runtime.server`, server-only) → `{ whatsappNumber, contactEmail }` from `WHATSAPP_NUMBER` → `NEXT_PUBLIC_WHATSAPP_NUMBER` (normalised to digits) and `PUBLIC_CONTACT_EMAIL` → `NEXT_PUBLIC_CONTACT_EMAIL` (trimmed), read from `process.env` on every call (no cache). `RootLayout` calls it per request and wraps the tree in `<RuntimeConfigProvider value={cfg}>` (`@/providers/RuntimeConfigProvider`, client); `useRuntimeConfig()` returns the pair (both `""` outside the provider, silently). An operator changes the number by editing the env file and restarting the service — never a rebuild.
 - `@/config/exchange`: `CurrencyCode`, `CURRENCIES`, `PairId`, `ExchangePair {id, from, to, quoteBase, featured}`, `SUPPORTED_PAIRS` (8: USDT→BTC, SOL→BTC, ETH→BTC, USDT→IDR featured; BTC→USDT, BTC→SOL, BTC→ETH, IDR→USDT reverse), `FEATURED_PAIRS`, `findReversePair`, `DEFAULT_PAIR_ID`, `DEFAULT_EXCHANGE_SPREAD`, `AMOUNT_LIMITS`, `MARKET_DISPLAY_PAIRS`, helpers `getPairById`, `isPairId`, `isCurrencyCode`, `findPair`, `getSendableCurrencies`, `getReceivableCurrencies`, `pairLabel`.
 - `@/config/market`: timing constants.
 - `@/config/server` (server-only): `serverConfig.exchange.spread`, `serverConfig.market.*`, `serverConfig.leads.*`, `serverConfig.security.*`.
@@ -89,10 +92,12 @@ Cross pairs: prefer a direct quote (ETHBTC), else derive `ETH/USD ÷ BTC/USD` (U
 `useMarket()` → `{ snapshot, connection: "connecting"|"live"|"reconnecting"|"polling"|"offline", status: MarketStatus, lastUpdatedAt: Date|null, isStale, refresh(), getRate(pairId), getQuote(base, quote) }`.
 UI rule: `status === "live"` → "● LIVE"; connection reconnecting/polling with fresh data → still LIVE data but show "○ RECONNECTING" on the connection indicator; `status === "stale"` → show "Last updated X minutes ago" and grey the prices; `status === "unavailable"` → "Market data temporarily unavailable" and hide/disable estimates (never show old prices as live).
 
-### WhatsApp (`@/lib/whatsapp`)
-`isWhatsAppConfigured()`, `buildWhatsAppUrl(message?)` → `https://wa.me/<digits>?text=<encoded>`,
+### WhatsApp (`@/lib/whatsapp` + `@/hooks/useWhatsApp`)
+Pure helpers: `isWhatsAppConfigured(number?)`, `buildWhatsAppUrl(message?, number?)` → `https://wa.me/<digits>?text=<encoded>` ("#contact" when the number is empty). `number` omitted → the build-time `siteConfig.whatsappNumber` (pure / server callers, tests); an explicit `""` never falls back.
 `buildExchangeInquiryMessage({ locale, pairId, amount, estimatedReceive?, reference? })`,
 `buildGeneralInquiryMessage(locale)`. Templates come from `t.whatsapp` (see `dictionaries/en/whatsapp.ts`). Amounts are formatted with the locale (`1,000 USDT` / `1.000 USDT`, `0.009 BTC` / `0,009 BTC`).
+
+**Client components build WhatsApp links ONLY through `useWhatsApp()`** → `{ number, configured, url(message?) }` (the runtime number from `<RuntimeConfigProvider>`; `url()` returns "#contact" when not configured) and read the e-mail through `useContactEmail()`. Behaviour contract: configured → `target="_blank" rel="noopener noreferrer"`; not configured → `href="#contact"` (smooth-scroll, same tab); the mailto link only when the e-mail is non-empty. Never read `siteConfig.whatsappNumber` / `siteConfig.contactEmail` in a component.
 
 ### Forms API contract (client ↔ `/api/contact`, `/api/exchange-request`)
 Request JSON: form fields + `hp` (honeypot, must be empty) + `ts` (form render timestamp ms).
@@ -109,6 +114,6 @@ Shared zod schemas in `@/lib/validation/schemas` (`contactSchema`, `exchangeRequ
 - Path alias `@/` → `src/`. Tailwind v4: tokens in `globals.css` via `@theme inline`; use semantic classes (`bg-surface`, `text-accent`, `border-line` …) defined there.
 - Animations: Framer Motion, subtle; respect `prefers-reduced-motion` (use `useReducedMotion`).
 - Accessibility: semantic landmarks, labelled inputs, focus-visible rings, `aria-live` for dynamic results, keyboard-operable menus/modal/accordion.
-- No secrets client-side. No `process.env.*` in client code other than `NEXT_PUBLIC_*` via `siteConfig`.
+- No secrets client-side. No `process.env.*` in client code other than `NEXT_PUBLIC_*` via `siteConfig`. Runtime contact details reach the client only through `<RuntimeConfigProvider>` (set once in `layout.tsx`).
 - Every user-visible string comes from the dictionary. No hardcoded English in components (brand name and currency codes/names excepted).
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm run test`. Do NOT run `next build` while another process may be running (it clobbers `.next`); the integrator runs the build.

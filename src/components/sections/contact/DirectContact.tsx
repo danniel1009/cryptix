@@ -5,9 +5,9 @@ import type { ReactNode } from "react";
 import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { siteConfig } from "@/config/site";
+import { useContactEmail, useWhatsApp } from "@/hooks/useWhatsApp";
 import { useI18n } from "@/lib/i18n/provider";
-import { buildGeneralInquiryMessage, buildWhatsAppUrl, isWhatsAppConfigured } from "@/lib/whatsapp";
+import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
 
 /** 48px circular icon well (docs/DESIGN.md → "Icon wells"). */
 function IconWell({ children }: { children: ReactNode }) {
@@ -23,14 +23,14 @@ function IconWell({ children }: { children: ReactNode }) {
 
 /**
  * "Prefer to talk directly?" — the human channels next to the form. WhatsApp
- * and email come from `siteConfig` (NEXT_PUBLIC_*); an unconfigured channel
- * is replaced by a note (WhatsApp) or omitted (email) rather than rendering a
- * dead link.
+ * and email are the RUNTIME values (`<RuntimeConfigProvider>`, env read per
+ * request); an unconfigured channel is replaced by a note (WhatsApp) or
+ * omitted (email) rather than rendering a dead link.
  */
 export function DirectContact() {
   const { t, locale } = useI18n();
-  const whatsappConfigured = isWhatsAppConfigured();
-  const email = siteConfig.contactEmail;
+  const { configured: whatsappConfigured, url: whatsappUrl } = useWhatsApp();
+  const email = useContactEmail();
 
   return (
     <Card padding="lg" className="flex h-full flex-col">
@@ -52,7 +52,7 @@ export function DirectContact() {
           </div>
           {whatsappConfigured ? (
             <Button
-              href={buildWhatsAppUrl(buildGeneralInquiryMessage(locale))}
+              href={whatsappUrl(buildGeneralInquiryMessage(locale))}
               target="_blank"
               rel="noopener noreferrer"
               variant="whatsapp"
