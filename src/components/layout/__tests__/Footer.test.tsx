@@ -51,20 +51,14 @@ describe("Footer — contact column", () => {
     expect(wa).toHaveAttribute("target", "_blank");
     expect(wa).toHaveAttribute("rel", "noopener noreferrer");
 
-    expect(mailto()?.getAttribute("href")).toBe("mailto:hello@example.com");
-    expect(mailto()).toHaveTextContent("hello@example.com");
+    // The footer contact column is WhatsApp-only by design: never an e-mail link.
+    expect(mailto()).toBeNull();
     expect(fallbackLink()).toBeNull();
   });
 
-  it("reflects a different runtime number and e-mail (not build-time constants)", () => {
+  it("reflects a different runtime number (not a build-time constant) and still shows no e-mail", () => {
     renderWithProviders(<Footer />, { runtime: { whatsappNumber: "6282317600972", contactEmail: "desk@example.com" } });
     expect(whatsappLink()?.getAttribute("href")?.startsWith("https://wa.me/6282317600972?text=")).toBe(true);
-    expect(mailto()?.getAttribute("href")).toBe("mailto:desk@example.com");
-  });
-
-  it("omits the mailto link when the e-mail is empty but WhatsApp is configured", () => {
-    renderWithProviders(<Footer />, { runtime: { whatsappNumber: "6282317600972", contactEmail: "" } });
-    expect(whatsappLink()).not.toBeNull();
     expect(mailto()).toBeNull();
     expect(fallbackLink()).toBeNull();
   });

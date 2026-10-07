@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail } from "lucide-react";
+
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { WhatsAppGlyph } from "@/components/layout/WhatsAppFloat";
 import { Container } from "@/components/ui/Container";
@@ -8,7 +8,7 @@ import { Logo } from "@/components/ui/Logo";
 import { DEFAULT_EXCHANGE_SPREAD } from "@/config/exchange";
 import { siteConfig } from "@/config/site";
 import { useSmoothScrollTo } from "@/hooks/useSmoothScrollTo";
-import { useContactEmail, useWhatsApp } from "@/hooks/useWhatsApp";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { interpolate } from "@/lib/i18n/dictionaries";
 import { useI18n } from "@/lib/i18n/provider";
 import { buildGeneralInquiryMessage } from "@/lib/whatsapp";
@@ -30,7 +30,6 @@ export function Footer() {
   const spread = formatSpread(snapshot?.spread ?? DEFAULT_EXCHANGE_SPREAD);
   const whatsapp = useWhatsApp();
   const whatsappHref = whatsapp.configured ? whatsapp.url(buildGeneralInquiryMessage(locale)) : null;
-  const email = useContactEmail();
   const vars = { spread, brand: siteConfig.name, year: siteConfig.copyrightYear };
 
   return (
@@ -83,15 +82,7 @@ export function Footer() {
                   </a>
                 </li>
               ) : null}
-              {email ? (
-                <li>
-                  <a href={`mailto:${email}`} className={LINK}>
-                    <Mail aria-hidden="true" className="h-4 w-4 text-accent" />
-                    <span className="break-all">{email}</span>
-                  </a>
-                </li>
-              ) : null}
-              {!whatsappHref && !email ? (
+              {!whatsappHref ? (
                 <li>
                   <a
                     href="#contact"
