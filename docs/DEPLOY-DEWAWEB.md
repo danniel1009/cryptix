@@ -47,7 +47,7 @@ nano /opt/cryptix/.env.production      # ubah baris: WHATSAPP_NUMBER=62823176009
 systemctl restart cryptix-web          # ≈3 detik, lalu service melayani lagi
 curl -s https://<domain>/ | grep -o 'wa.me/[0-9]*' | head -1   # verifikasi → wa.me/6282317600972
 ```
-Format bebas: `+62 823-1760-0972` juga diterima (semua selain digit dibuang) dan menghasilkan `https://wa.me/6282317600972`. Kosongkan nilainya untuk menyembunyikan tombol WhatsApp — semua CTA jatuh ke form kontak, tidak ada link mati. Email kontak publik diganti dengan cara yang sama lewat `PUBLIC_CONTACT_EMAIL` (kosong = tidak ditampilkan).
+Format bebas: `+62 823-1760-0972` juga diterima (semua selain digit dibuang) dan menghasilkan `https://wa.me/6282317600972`. Kosongkan `WHATSAPP_NUMBER` **dan** `NEXT_PUBLIC_WHATSAPP_NUMBER` (server memakai yang pertama tidak kosong) untuk menyembunyikan tombol WhatsApp — semua CTA jatuh ke form kontak, tidak ada link mati. Email kontak publik diganti dengan cara yang sama lewat `PUBLIC_CONTACT_EMAIL` (kosong = tidak ditampilkan).
 
 ## 6. Penempatan produksi saat ini (VPS bersama dengan caripembantu.id)
 

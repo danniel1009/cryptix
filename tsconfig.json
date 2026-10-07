@@ -36,9 +36,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     ".next-build/types/**/*.ts",
-    ".next-build/dev/types/**/*.ts",
-    "/private/tmp/claude-501/-Users-danniel/ed56caa5-adea-4a7a-8aac-74c6acd74a68/scratchpad/.next-verify/types/**/*.ts",
-    "/private/tmp/claude-501/-Users-danniel/ed56caa5-adea-4a7a-8aac-74c6acd74a68/scratchpad/.next-verify/dev/types/**/*.ts"
+    ".next-build/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
