@@ -49,6 +49,29 @@ curl -s https://<domain>/ | grep -o 'wa.me/[0-9]*' | head -1   # verifikasi → 
 ```
 Format bebas: `+62 823-1760-0972` juga diterima (semua selain digit dibuang) dan menghasilkan `https://wa.me/6282317600972`. Kosongkan nilainya untuk menyembunyikan tombol WhatsApp — semua CTA jatuh ke form kontak, tidak ada link mati. Email kontak publik diganti dengan cara yang sama lewat `PUBLIC_CONTACT_EMAIL` (kosong = tidak ditampilkan).
 
+## 6. Penempatan produksi saat ini (VPS bersama dengan caripembantu.id)
+
+Sejak 2026-10-07 Cryptix berjalan di VPS yang sama dengan caripembantu.id (`103.152.242.203`), terisolasi:
+
+| Hal | Nilai |
+|---|---|
+| User / folder | `cryptix` / `/opt/cryptix` |
+| Service | `cryptix-web` (systemd), port **3001** (3000 dan 8000 milik caripembantu) |
+| Env | `/opt/cryptix/.env.production` (0600) |
+| nginx | `/etc/nginx/sites-available/cryptix.conf` — `cryptix.id` (TLS Let's Encrypt, auto-renew), `www.cryptix.id` → 301 ke apex, HTTP → HTTPS |
+| Node | global v20.20 milik VPS — **jangan di-upgrade** (runtime `tsx` caripembantu bergantung padanya) |
+| Deploy | `npm run deploy` dari laptop dengan `deploy/.deployrc` (host di atas, key `~/.ssh/caripembantu_vps`, port 3001) |
+
+Jangan jalankan `deploy/server-setup.sh` di VPS ini (script itu memasang Node 22, mengubah ufw, dan menghapus site default nginx — semuanya milik VPS bersama). nginx hanya boleh `reload`, bukan `restart`.
+
+Perintah operasional harian (dari laptop):
+
+```bash
+ssh -i ~/.ssh/caripembantu_vps root@103.152.242.203 "journalctl -u cryptix-web -n 50 --no-pager"   # log
+ssh -i ~/.ssh/caripembantu_vps root@103.152.242.203 "systemctl restart cryptix-web"                   # restart (±3 s)
+ssh -i ~/.ssh/caripembantu_vps root@103.152.242.203 "nano /opt/cryptix/.env.production"               # ubah nomor WA / email
+```
+
 ## Alternatif: shared hosting cPanel (DewaWeb "Node.js App")
 1. Setup Node.js App di cPanel: Node 20+, application root `cryptix`, startup file `server.js` (buat: `require("next/dist/server/lib/start-server")` tidak diperlukan — cukup `const { spawn } = require("child_process"); spawn("npx", ["next", "start", "-p", process.env.PORT], { stdio: "inherit" });`).
 2. Upload repo (tanpa `node_modules`/`.next`), jalankan `npm ci && npm run build` di terminal cPanel, set env di panel.
