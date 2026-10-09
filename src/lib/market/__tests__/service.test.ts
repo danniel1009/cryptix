@@ -264,3 +264,23 @@ describe("buildProviderChain", () => {
     expect(buildProviderChain(market({ providers: ["exchange"], exchangeApiUrl: "https://api.example-exchange.com" })).chain).toEqual(["exchange"]);
   });
 });
+
+describe("createMarketService — warm refresh loop", () => {
+  it("keeps refreshing on the cadence without any caller when warmRefresh is on, and stop() ends it", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchAll = vi.fn(async () => ({ quotes: [], errors: [] }));
+      const source = { name: "src", chain: ["src"], fetchAll } as unknown as Parameters<typeof createMarketService>[0]["provider"];
+      const svc = createMarketService({ provider: source, spread: 0.05, allowMock: false, refreshIntervalMs: 1_000, warmRefresh: true, logger: null });
+      expect(fetchAll).toHaveBeenCalledTimes(0);
+      await vi.advanceTimersByTimeAsync(3_100);
+      expect(fetchAll.mock.calls.length).toBeGreaterThanOrEqual(3);
+      const n = fetchAll.mock.calls.length;
+      svc.stop();
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(fetchAll).toHaveBeenCalledTimes(n);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

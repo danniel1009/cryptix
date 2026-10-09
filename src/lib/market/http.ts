@@ -1,3 +1,4 @@
+import { Agent as UndiciAgent, type Dispatcher } from "undici";
 import { PROVIDER_TIMEOUT_MS } from "@/config/market";
 
 /**
@@ -43,6 +44,30 @@ export function safeUrl(url: string): string {
     return "<invalid-url>";
   }
 }
+
+/**
+ * Provider calls share ONE dispatcher with a long keep-alive. The VPS path to
+ * Cloudflare-fronted hosts (Indodax, CoinGecko) drops many SYN packets, so a
+ * NEW TCP connection fails most of the time while an established one is
+ * reliable (measured 2026-10-09: 17/20 ETIMEDOUT on fresh connections vs 20/20
+ * OK on a reused one). Node's default agent closes idle sockets after 4 s —
+ * shorter than the refresh cadence — which is exactly the failure mode.
+ */
+let keepAliveDispatcher: Dispatcher | null = null;
+export function getKeepAliveDispatcher(): Dispatcher {
+  if (!keepAliveDispatcher) {
+    keepAliveDispatcher = new UndiciAgent({
+      keepAliveTimeout: 120_000,
+      keepAliveMaxTimeout: 600_000,
+      connections: 8,
+      pipelining: 1,
+    });
+  }
+  return keepAliveDispatcher;
+}
+
+/** Identifies our service to upstreams (some CDNs score anonymous agents as bots). */
+export const PROVIDER_USER_AGENT = "Cryptix-MarketFeed/1.0 (+https://cryptix.id)";
 
 export interface FetchJsonOptions {
   /** Extra request headers (API keys go here, never in the URL). */
@@ -118,9 +143,11 @@ export async function fetchJson<T = unknown>(url: string, options: FetchJsonOpti
     try {
       response = await fetch(url, {
         method: "GET",
-        headers: { accept: "application/json", ...(headers ?? {}) },
+        headers: { accept: "application/json", "user-agent": PROVIDER_USER_AGENT, ...(headers ?? {}) },
         signal: controller.signal,
         cache: "no-store",
+        // Node's fetch honours an undici dispatcher (duck-typed); test stubs ignore it.
+        ...({ dispatcher: getKeepAliveDispatcher() } as object),
       });
     } catch (cause) {
       if (timedOut) {

@@ -57,6 +57,12 @@ export interface MarketServiceOptions {
   spread: number;
   allowMock: boolean;
   refreshIntervalMs?: number;
+  /**
+   * Keep refreshing in the background even with no visitors, so the provider
+   * keep-alive connections stay warm and the first visitor never pays for a
+   * cold (often failing) connection. Default: on outside tests.
+   */
+  warmRefresh?: boolean;
   requests?: readonly PairRequest[];
   optionalRequests?: readonly PairRequest[];
   /** Injectable clock (ms since epoch). */
@@ -72,6 +78,8 @@ export interface MarketService {
   getCachedSnapshot(): MarketSnapshot | null;
   /** True while a refresh is running. */
   isRefreshing(): boolean;
+  /** Stop the background warm-refresh loop (tests / shutdown). */
+  stop(): void;
   /** Drop all state (tests / hot reload). */
   reset(): void;
 }
@@ -115,6 +123,7 @@ export function createMarketService(options: MarketServiceOptions): MarketServic
     requests = REQUIRED_PAIRS,
     optionalRequests = OPTIONAL_PAIRS,
     now = Date.now,
+    warmRefresh = process.env.NODE_ENV !== "test",
   } = options;
   const logger = options.logger === undefined ? console : options.logger;
   const allRequests: PairRequest[] = [...requests, ...optionalRequests];
@@ -204,17 +213,29 @@ export function createMarketService(options: MarketServiceOptions): MarketServic
     }
   }
 
+  function getMarketSnapshot(opts?: { force?: boolean }): Promise<MarketSnapshot> {
+    const at = now();
+    const fresh = snapshot !== null && at - lastRefreshStartedAt < refreshIntervalMs;
+    if (!opts?.force && fresh) return Promise.resolve(withCurrentStatus(snapshot as MarketSnapshot, at));
+    if (inFlight) return inFlight;
+    inFlight = refresh(at).finally(() => {
+      inFlight = null;
+    });
+    return inFlight;
+  }
+
+  // Warm loop: refresh on the cadence regardless of traffic. `unref` keeps it
+  // from holding the process open; errors never escape (getMarketSnapshot never throws).
+  let warmTimer: ReturnType<typeof setInterval> | null = null;
+  if (warmRefresh) {
+    warmTimer = setInterval(() => {
+      void getMarketSnapshot().catch(() => {});
+    }, refreshIntervalMs);
+    warmTimer.unref?.();
+  }
+
   return {
-    getMarketSnapshot(opts) {
-      const at = now();
-      const fresh = snapshot !== null && at - lastRefreshStartedAt < refreshIntervalMs;
-      if (!opts?.force && fresh) return Promise.resolve(withCurrentStatus(snapshot as MarketSnapshot, at));
-      if (inFlight) return inFlight;
-      inFlight = refresh(at).finally(() => {
-        inFlight = null;
-      });
-      return inFlight;
-    },
+    getMarketSnapshot,
     getCachedSnapshot() {
       return snapshot ? withCurrentStatus(snapshot, now()) : null;
     },
@@ -226,6 +247,10 @@ export function createMarketService(options: MarketServiceOptions): MarketServic
       lastGood.clear();
       lastRefreshStartedAt = Number.NEGATIVE_INFINITY;
       inFlight = null;
+    },
+    stop() {
+      if (warmTimer) clearInterval(warmTimer);
+      warmTimer = null;
     },
   };
 }

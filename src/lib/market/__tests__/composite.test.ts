@@ -237,3 +237,30 @@ describe("CompositeProvider — transient retries", () => {
     expect(errors).toHaveLength(1);
   });
 });
+
+describe("CompositeProvider — HTTP 429 cooldown", () => {
+  const q = (price: number, source: string): MarketQuote => ({
+    base: "USDT", quote: "IDR", price, change24hPct: null, updatedAt: "2026-10-09T05:00:00.000Z", source,
+  });
+  function provider(name: string, impl: () => Promise<MarketQuote[]>) {
+    const p = { name, calls: 0, supports: () => true, async fetchQuotes() { p.calls += 1; return impl(); } };
+    return p;
+  }
+  it("skips a rate-limited provider for the cooldown window and lets the next provider serve the pair", async () => {
+    let t = 1_000_000;
+    const limited = provider("coingecko", async () => { throw new MarketHttpError("http", "HTTP 429", { url: "https://x", status: 429 }); });
+    const backup = provider("indodax", async () => [q(16485, "indodax")]);
+    const c = new CompositeProvider([limited, backup], { sleep: async () => {}, now: () => t, rateLimitCooldownMs: 60_000 });
+    const first = await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(first.quotes.map((x) => x.source)).toEqual(["indodax"]); // fallback served it
+    expect(limited.calls).toBe(1);
+    t += 10_000;
+    const second = await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(second.quotes.map((x) => x.source)).toEqual(["indodax"]);
+    expect(limited.calls).toBe(1); // still cooling down: not called again
+    expect(second.errors).toEqual([]);
+    t += 60_001;
+    await c.fetchAll([{ base: "USDT", quote: "IDR" }]);
+    expect(limited.calls).toBe(2); // cooldown over: tried again
+  });
+});

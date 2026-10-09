@@ -48,6 +48,10 @@ export interface CompositeProviderOptions {
   retryDelayMs?: number;
   /** Sleep implementation; injectable for tests. */
   sleep?: (ms: number) => Promise<void>;
+  /** After an HTTP 429 a provider is skipped for this long (default 90 s). */
+  rateLimitCooldownMs?: number;
+  /** Clock; injectable for tests. */
+  now?: () => number;
   /** Optional hook (e.g. logging) invoked for every recorded error. */
   onError?: (error: ProviderError) => void;
 }
@@ -71,6 +75,10 @@ export class CompositeProvider implements MarketDataProvider {
   private readonly deadlineMs: number;
   private readonly onError: ((error: ProviderError) => void) | undefined;
   private readonly transientRetries: number;
+  /** Providers that answered HTTP 429 are skipped until this time (ms epoch). */
+  private readonly cooldownUntil = new Map<string, number>();
+  private readonly rateLimitCooldownMs: number;
+  private readonly now: () => number;
   private readonly retryDelayMs: number;
   private readonly sleep: (ms: number) => Promise<void>;
 
@@ -79,7 +87,9 @@ export class CompositeProvider implements MarketDataProvider {
     this.deadlineMs = options.providerDeadlineMs ?? PROVIDER_TIMEOUT_MS * 2.5;
     this.onError = options.onError;
     this.transientRetries = Math.max(0, Math.trunc(options.transientRetries ?? 1));
-    this.retryDelayMs = Math.max(0, options.retryDelayMs ?? 400);
+    this.rateLimitCooldownMs = Math.max(0, options.rateLimitCooldownMs ?? 90_000);
+    this.now = options.now ?? Date.now;
+    this.retryDelayMs = Math.max(0, options.retryDelayMs ?? 1200);
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }
 
@@ -144,6 +154,9 @@ export class CompositeProvider implements MarketDataProvider {
   }
 
   private recordError(provider: MarketDataProvider, err: unknown, errors: ProviderError[]): void {
+    if (err instanceof MarketHttpError && err.kind === "http" && err.status === 429 && this.rateLimitCooldownMs > 0) {
+      this.cooldownUntil.set(provider.name, this.now() + this.rateLimitCooldownMs);
+    }
     const error: ProviderError = { provider: provider.name, message: describeError(err) };
     errors.push(error);
     try {
@@ -155,6 +168,11 @@ export class CompositeProvider implements MarketDataProvider {
 
   /** `supports()` is supposed to be pure, but a throwing implementation must not break the chain. */
   private safeSupports(provider: MarketDataProvider, r: PairRequest): boolean {
+    const until = this.cooldownUntil.get(provider.name);
+    if (until !== undefined) {
+      if (this.now() < until) return false; // rate-limited recently: let the next provider serve it
+      this.cooldownUntil.delete(provider.name);
+    }
     try {
       return provider.supports(r.base, r.quote) === true;
     } catch {
