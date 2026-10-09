@@ -46,12 +46,17 @@ export function safeUrl(url: string): string {
 }
 
 /**
- * Provider calls share ONE dispatcher with a long keep-alive. The VPS path to
- * Cloudflare-fronted hosts (Indodax, CoinGecko) drops many SYN packets, so a
- * NEW TCP connection fails most of the time while an established one is
- * reliable (measured 2026-10-09: 17/20 ETIMEDOUT on fresh connections vs 20/20
- * OK on a reused one). Node's default agent closes idle sockets after 4 s —
- * shorter than the refresh cadence — which is exactly the failure mode.
+ * Provider calls share ONE dispatcher.
+ *
+ * Why the connect options matter (measured on the production VPS, 2026-10-09):
+ * Node's "happy eyeballs" (autoSelectFamily) gives EACH resolved address only
+ * 250 ms to connect. Cloudflare-fronted hosts (Indodax, CoinGecko) resolve to
+ * two IPv4 addresses, and the VPS path occasionally loses the first SYN (the
+ * retransmit comes after ~1 s), so the attempt was abandoned at ~506 ms with
+ * ETIMEDOUT — 0/6 fresh connections succeeded with the default agent, 6/6 with
+ * a 3 s per-address attempt timeout. curl was never affected (no such cap).
+ * The long keep-alive additionally lets refreshes reuse one warm socket
+ * (Node's default drops idle sockets after 4 s, shorter than the refresh cadence).
  */
 let keepAliveDispatcher: Dispatcher | null = null;
 export function getKeepAliveDispatcher(): Dispatcher {
@@ -61,6 +66,11 @@ export function getKeepAliveDispatcher(): Dispatcher {
       keepAliveMaxTimeout: 600_000,
       connections: 8,
       pipelining: 1,
+      connect: {
+        // Give each address time for one SYN retransmit instead of Node's 250 ms.
+        autoSelectFamilyAttemptTimeout: 3_000,
+        timeout: 10_000,
+      },
     });
   }
   return keepAliveDispatcher;
@@ -159,7 +169,8 @@ export async function fetchJson<T = unknown>(url: string, options: FetchJsonOpti
       if (controller.signal.aborted) {
         throw new MarketHttpError("aborted", `Request aborted: ${display}`, { url: display, cause });
       }
-      throw new MarketHttpError("network", `Network error: ${display}`, { url: display, cause });
+      const code = (cause as { cause?: { code?: string } } | undefined)?.cause?.code ?? (cause as { code?: string } | undefined)?.code;
+      throw new MarketHttpError("network", `Network error${code ? ` (${code})` : ""}: ${display}`, { url: display, cause });
     }
 
     if (!response.ok) {
