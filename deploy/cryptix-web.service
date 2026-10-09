@@ -13,6 +13,10 @@ Environment=HOME=__APP_PATH__
 ExecStart=/usr/bin/npm run start -- -p ${PORT}
 Restart=always
 RestartSec=3
+# Long-lived SSE streams keep `next start` alive after SIGTERM; cap the stop so a
+# deploy swap takes seconds (clients reconnect automatically), not the 90 s default.
+TimeoutStopSec=8
+KillMode=mixed
 # Hardening
 NoNewPrivileges=true
 PrivateTmp=true
